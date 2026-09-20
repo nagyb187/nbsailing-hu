@@ -168,23 +168,25 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
       [46.8905, 17.870], [46.898, 17.850], [46.910, 17.848], [46.922, 17.848]
     ];
 
-    // Kitűzött hajóút a szoros DÉLI oldalán, vízen (kelet -> nyugat)
-    const TIHANY_CHANNEL = [
-      { lat: 46.928, lon: 17.912, name: "Tihany K É" },
-      { lat: 46.916, lon: 17.912, name: "Tihany K" },
-      { lat: 46.905, lon: 17.910, name: "Tihany K D" },
-      { lat: 46.896, lon: 17.908, name: "Szoros bejárat K" },
-      { lat: 46.890, lon: 17.904, name: "Szoros K" },
-      { lat: 46.887, lon: 17.900, name: "Cső K" },
-      { lat: 46.886, lon: 17.894, name: "Cső" },
-      { lat: 46.886, lon: 17.888, name: "Cső közepe" },
-      { lat: 46.886, lon: 17.882, name: "Cső NY" },
-      { lat: 46.887, lon: 17.876, name: "Szoros NY" },
-      { lat: 46.890, lon: 17.868, name: "Nyugati medence" },
-      { lat: 46.895, lon: 17.850, name: "Tihany után" }
+    // Sekély / tiltott víz a szoros DK-i oldalán (Zamárdi–Szántód gázló, kardinálisoktól délre)
+    const tihanyShallow = [
+      [46.9015, 17.9140], [46.8990, 17.9125], [46.8968, 17.9097],
+      [46.8947, 17.9068], [46.8922, 17.9030], [46.8878, 17.8980],
+      [46.8820, 17.8960], [46.8800, 17.9000], [46.8800, 17.9150],
+      [46.8860, 17.9220], [46.8950, 17.9250], [46.9020, 17.9220]
     ];
 
-    let map, boatMarker, targetMarker, routeLine, lakePolyLayer, channelLine, landPolyLayer;
+    // Kényszerített hajóút: csak a cső, a kardinálisok között (ÉK -> DNY -> NY)
+    const TIHANY_CHANNEL = [
+      { lat: 46.901, lon: 17.912, name: "Szoros ÉK" },
+      { lat: 46.897, lon: 17.906, name: "Kardinálisok" },
+      { lat: 46.894, lon: 17.902, name: "Cső ÉK" },
+      { lat: 46.891, lon: 17.898, name: "Tihanyrév" },
+      { lat: 46.888, lon: 17.890, name: "Cső" },
+      { lat: 46.888, lon: 17.884, name: "Szoros NY" }
+    ];
+
+    let map, boatMarker, targetMarker, routeLine, lakePolyLayer, channelLine, landPolyLayer, shallowLayer;
     let currentPos = null;
     let allStations = {};
 
@@ -206,8 +208,11 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
       landPolyLayer = L.polygon(tihanyLand, {
         color: '#f87171', weight: 1, fillColor: '#ef4444', fillOpacity: 0.12
       }).addTo(map);
+      shallowLayer = L.polygon(tihanyShallow, {
+        color: '#ef4444', weight: 1.5, dashArray: '4 4', fillColor: '#dc2626', fillOpacity: 0.22
+      }).addTo(map).bindPopup('Tiltott: sekély (Zamárdi–Szántód)');
       channelLine = L.polyline(TIHANY_CHANNEL.map(p => [p.lat, p.lon]), {
-        color: '#fbbf24', weight: 3, dashArray: '8 6', opacity: 0.9
+        color: '#22c55e', weight: 4, opacity: 0.95
       }).addTo(map).bindPopup('Tihanyi hajóút (cső)');
     }
 
@@ -225,6 +230,7 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
 
     function onWater(lat, lon) {
       if (pointInPolygon(lat, lon, tihanyLand)) return false;
+      if (pointInPolygon(lat, lon, tihanyShallow)) return false;
       return pointInPolygon(lat, lon, balatonPolygon);
     }
 
@@ -240,7 +246,7 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
     }
 
     function inStraitZone(lat, lon) {
-      return lon > 17.84 && lon < 17.94 && lat > 46.87 && lat < 46.94;
+      return lon > 17.882 && lon < 17.915 && lat > 46.885 && lat < 46.905;
     }
 
     function needsTihanyCrossing(from, to) {
@@ -448,6 +454,12 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
       if (needsTihanyCrossing(currentPos, target)) {
         const goingWest = currentPos.lon > target.lon;
         const channel = goingWest ? TIHANY_CHANNEL : TIHANY_CHANNEL.slice().reverse();
+        const gate = channel[0];
+        const approach = polarRoute(pos, gate, polar);
+        path = path.concat(approach.path.slice(1));
+        totalNM += approach.totalNM;
+        totalTime += approach.totalTime;
+        pos = approach.pos;
         const corridor = followWaypoints(pos, channel);
         path = path.concat(corridor.path.slice(1));
         totalNM += corridor.totalNM;
@@ -471,7 +483,7 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
         <strong>${target.name}</strong><br>
         Távolság: ~${totalNM.toFixed(1)} NM<br>
         Becsült idő: ${h} óra ${m} perc<br>
-        <span style="font-size:0.8rem;opacity:0.85;">Sárga szaggatott: Tihanyi hajóút. A szorosban 100 m-es lépés, polar csak nyílt vízen.</span>
+        <span style="font-size:0.8rem;opacity:0.85;">Zöld: kényszerített cső. Piros satír: sekély, tilos.</span>
       `;
     }
 
