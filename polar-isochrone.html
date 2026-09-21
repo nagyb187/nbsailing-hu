@@ -31,7 +31,9 @@
     .wind-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 10px; }
     .wind-table th { background: #1e40af; color: white; padding: 8px 6px; text-align: left; }
     .wind-table td { padding: 7px 6px; border-bottom: 1px solid #334155; }
-    .wind-table tr:nth-child(even) { background: #0f172a; }
+    .chk { display: flex; align-items: center; gap: 8px; margin: 6px 0; color: #e2e8f0; font-size: 0.9rem; cursor: pointer; }
+    .chk input { width: auto; accent-color: #3b82f6; }
+    .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
   </style>
 </head>
 <body>
@@ -77,39 +79,51 @@
         <div>
           <label>Pozíció</label>
           <button class="btn-secondary" onclick="getLocation()">GPS lekérése</button>
-          <button class="btn-warning" onclick="setTestPosition()">Teszt pozíció (Balatonfüred előtt)</button>
+          <select id="testSelect" onchange="applyTestPosition()" style="margin-top:8px;">
+            <option value="">Tesztpont…</option>
+            <option value="fured">Balatonfüred előtt</option>
+            <option value="szolo_keszthely">Szóló Keszthely</option>
+            <option value="szolo_almadi">Szóló Almádi</option>
+            <option value="szolo_aliga">Szóló Aliga</option>
+          </select>
           <div class="status" id="locStatus">Még nincs pozíció</div>
         </div>
         <div>
           <label>Célpont</label>
-          <select id="targetSelect">
+          <select id="targetSelect" onchange="onTargetChange()">
             <option value="szolo_rajt">Szóló Rajt</option>
             <option value="szolo_keszthely">Szóló Keszthely</option>
             <option value="szolo_aliga">Szóló Aliga</option>
             <option value="szolo_almadi">Szóló Almádi</option>
-            <option value="keszthely">Keszthely</option>
+            <option value="manual">Manuális</option>
           </select>
+          <div id="manualTarget" style="display:none;margin-top:8px;">
+            <div class="row">
+              <div>
+                <label>Szélesség (°)</label>
+                <input id="manualLat" inputmode="decimal" placeholder="46.75654">
+              </div>
+              <div>
+                <label>Hosszúság (°)</label>
+                <input id="manualLon" inputmode="decimal" placeholder="17.26233">
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
     <div class="card">
-      <label>Szél-előrejelzés (Open-Meteo)</label>
-      <div class="row">
-        <div>
-          <select id="fcModel">
-            <option value="dmi_harmonie_arome_europe">AROME DMI HARMONIE (~2 km)</option>
-            <option value="icon_d2">ICON-D2 (~2 km, DWD)</option>
-            <option value="icon_eu">ICON-EU (~7 km)</option>
-            <option value="geosphere_seamless">AROME GeoSphere (~2.5 km)</option>
-            <option value="gfs_seamless">GFS</option>
-          </select>
-        </div>
-      </div>
-      <button class="btn-success" onclick="loadForecast()">Előrejelzés letöltése</button>
-      <div class="status" id="fcStatus">Opcionális. Ha van met.hu mérés, az az első 2 órában keveredik a modellel.</div>
+      <label>Szél-előrejelzés (Open-Meteo) — több modell</label>
+      <label class="chk"><input type="checkbox" name="fcModel" value="icon_d2" data-label="ICON-D2" data-color="#3b82f6" checked> <span class="swatch" style="background:#3b82f6"></span>ICON-D2 (~2 km, DWD)</label>
+      <label class="chk"><input type="checkbox" name="fcModel" value="icon_eu" data-label="ICON-EU" data-color="#22c55e"> <span class="swatch" style="background:#22c55e"></span>ICON-EU (~7 km)</label>
+      <label class="chk"><input type="checkbox" name="fcModel" value="geosphere_seamless" data-label="AROME GeoSphere" data-color="#f59e0b"> <span class="swatch" style="background:#f59e0b"></span>AROME GeoSphere (~2.5 km)</label>
+      <label class="chk"><input type="checkbox" name="fcModel" value="gfs_seamless" data-label="GFS" data-color="#a855f7"> <span class="swatch" style="background:#a855f7"></span>GFS</label>
+      <label class="chk"><input type="checkbox" id="useNowcast" data-label="met.hu mérés" data-color="#94a3b8" checked> <span class="swatch" style="background:#94a3b8"></span>met.hu mérés (állandó most)</label>
+      <button class="btn-success" onclick="loadForecast()">Kijelölt modellek letöltése</button>
+      <div class="status" id="fcStatus">Az első 2 órában a met.hu mérés keveredik minden modellel, ha le van töltve.</div>
     </div>
     <div class="card">
-      <button class="btn-primary" onclick="planFullRoute()">Isochrone útvonal (zezo-szerű)</button>
+      <button class="btn-primary" onclick="planFullRoute()">Isochrone útvonal (összes kijelölt)</button>
       <div id="result" style="display:none;" class="result"></div>
     </div>
     <div class="card">
@@ -155,7 +169,7 @@
       szolo_keszthely: { lat: 46.756538, lon: 17.262328, name: "Szóló Keszthely" },
       szolo_aliga:     { lat: 46.983157, lon: 18.156025, name: "Szóló Aliga" },
       szolo_almadi:    { lat: 47.018845, lon: 18.017193, name: "Szóló Almádi" },
-      keszthely:       { lat: 46.7650,   lon: 17.2480,   name: "Keszthely" }
+      fured:           { lat: 46.93878,  lon: 17.91093,  name: "Balatonfüred előtt" }
     };
     const stationCoords = {
       "Siófok": { lat: 46.905, lon: 18.050 },
@@ -313,10 +327,37 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
       }, err => status.textContent = "Hiba: " + err.message, { enableHighAccuracy: true });
     }
 
-    function setTestPosition() {
-      currentPos = { lat: 46.93878, lon: 17.91093 };
+    function parseCoord(v) {
+      if (v == null) return NaN;
+      return parseFloat(String(v).trim().replace(',', '.'));
+    }
+
+    function applyTestPosition() {
+      const key = document.getElementById('testSelect').value;
+      if (!key || !presets[key]) return;
+      const p = presets[key];
+      currentPos = { lat: p.lat, lon: p.lon };
       updatePositionMarker();
-      document.getElementById('locStatus').textContent = "Teszt: 46.93878, 17.91093";
+      document.getElementById('locStatus').textContent = p.name + ': ' + p.lat + ', ' + p.lon;
+    }
+
+    function onTargetChange() {
+      const manual = document.getElementById('targetSelect').value === 'manual';
+      document.getElementById('manualTarget').style.display = manual ? 'block' : 'none';
+    }
+
+    function getTarget() {
+      const key = document.getElementById('targetSelect').value;
+      if (key === 'manual') {
+        const lat = parseCoord(document.getElementById('manualLat').value);
+        const lon = parseCoord(document.getElementById('manualLon').value);
+        if (!isFinite(lat) || !isFinite(lon) || lat < 46.6 || lat > 47.2 || lon < 17.1 || lon > 18.3) {
+          alert('Manuális cél: érvényes Balaton-környéki lat/lon kell (pl. 46.75654 és 17.26233).');
+          return null;
+        }
+        return { lat, lon, name: 'Manuális (' + lat.toFixed(5) + ', ' + lon.toFixed(5) + ')' };
+      }
+      return presets[key] || null;
     }
 
     function updatePositionMarker() {
@@ -408,8 +449,10 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
       return acts;
     }
 
-    let forecast = null;
+    let forecasts = {};
+    let activeForecast = null;
     let isoLayers = [];
+    let routeLines = [];
 
     function forecastGrid() {
       const pts = [];
@@ -421,48 +464,64 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
       return pts;
     }
 
+    function selectedModelInputs() {
+      return Array.from(document.querySelectorAll('input[name="fcModel"]:checked'));
+    }
+
+    async function fetchOneModel(model, grid, status) {
+      const chunk = 8;
+      const points = [];
+      for (let i = 0; i < grid.length; i += chunk) {
+        const g = grid.slice(i, i + chunk);
+        const url = 'https://api.open-meteo.com/v1/forecast'
+          + '?latitude=' + g.map(p => p.lat).join(',')
+          + '&longitude=' + g.map(p => p.lon).join(',')
+          + '&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m'
+          + '&wind_speed_unit=kn&forecast_days=2&timezone=Europe/Budapest'
+          + '&models=' + model;
+        const res = await fetch(url);
+        const data = await res.json();
+        const arr = Array.isArray(data) ? data : [data];
+        if (arr[0] && arr[0].error) throw new Error(model + ': ' + (arr[0].reason || arr[0].error));
+        arr.forEach((d, j) => {
+          if (!d.hourly) return;
+          points.push({
+            lat: g[j].lat, lon: g[j].lon,
+            times: d.hourly.time.map(t => Date.parse(t)),
+            spd: d.hourly.wind_speed_10m,
+            dir: d.hourly.wind_direction_10m,
+            gust: d.hourly.wind_gusts_10m || d.hourly.wind_speed_10m
+          });
+        });
+        if (status) status.textContent = model + ': ' + points.length + '/' + grid.length + ' pont...';
+      }
+      if (!points.length) throw new Error(model + ': üres válasz');
+      return { model, fetched: Date.now(), points };
+    }
+
     async function loadForecast() {
       const status = document.getElementById('fcStatus');
-      status.textContent = 'Modell letöltése...';
-      const grid = forecastGrid();
-      const model = document.getElementById('fcModel').value;
-      const chunk = 8;
-      const base = model.indexOf('dmi') === 0
-        ? 'https://api.open-meteo.com/v1/dmi'
-        : 'https://api.open-meteo.com/v1/forecast';
-      try {
-        const points = [];
-        for (let i = 0; i < grid.length; i += chunk) {
-          const g = grid.slice(i, i + chunk);
-          const url = base
-            + '?latitude=' + g.map(p => p.lat).join(',')
-            + '&longitude=' + g.map(p => p.lon).join(',')
-            + '&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m'
-            + '&wind_speed_unit=kn&forecast_days=2&timezone=Europe/Budapest'
-            + '&models=' + model;
-          const res = await fetch(url);
-          const data = await res.json();
-          const arr = Array.isArray(data) ? data : [data];
-          if (arr[0] && arr[0].error) throw new Error(arr[0].reason || arr[0].error);
-          arr.forEach((d, j) => {
-            if (!d.hourly) return;
-            points.push({
-              lat: g[j].lat, lon: g[j].lon,
-              times: d.hourly.time.map(t => Date.parse(t)),
-              spd: d.hourly.wind_speed_10m,
-              dir: d.hourly.wind_direction_10m,
-              gust: d.hourly.wind_gusts_10m || d.hourly.wind_speed_10m
-            });
-          });
-          status.textContent = 'Modell: ' + points.length + '/' + grid.length + ' pont...';
-        }
-        if (!points.length) throw new Error('üres válasz');
-        forecast = { model, fetched: Date.now(), points };
-        status.textContent = model + ' • ' + points.length + ' pont • ' + points[0].spd.length + ' óra • ' + new Date().toLocaleTimeString('hu-HU');
-      } catch (e) {
-        forecast = null;
-        status.textContent = 'Előrejelzés hiba: ' + e.message + ' — útvonalhoz a met.hu mostani szél is elég.';
+      const inputs = selectedModelInputs();
+      if (!inputs.length) {
+        status.textContent = 'Jelölj ki legalább egy modellt.';
+        return;
       }
+      const grid = forecastGrid();
+      forecasts = {};
+      const ok = [], bad = [];
+      for (let i = 0; i < inputs.length; i++) {
+        const model = inputs[i].value;
+        status.textContent = 'Letöltés: ' + (inputs[i].dataset.label || model) + '...';
+        try {
+          forecasts[model] = await fetchOneModel(model, grid, status);
+          ok.push(inputs[i].dataset.label || model);
+        } catch (e) {
+          bad.push((inputs[i].dataset.label || model) + ' (' + e.message + ')');
+        }
+      }
+      status.textContent = (ok.length ? ('OK: ' + ok.join(', ')) : 'Nincs modell')
+        + (bad.length ? ' • hiba: ' + bad.join('; ') : '')
+        + ' • ' + new Date().toLocaleTimeString('hu-HU');
     }
 
     function interpHourly(pt, tms) {
@@ -485,6 +544,7 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
     }
 
     function getForecastOnly(lat, lon, tms) {
+      const forecast = activeForecast;
       if (!forecast || !forecast.points.length) return null;
       let sumW = 0, sx = 0, sy = 0, ss = 0;
       for (let i = 0; i < forecast.points.length; i++) {
@@ -532,9 +592,9 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
 
     function windSourceLabel() {
       const hasObs = Object.keys(allStations).length > 0;
-      if (hasObs && forecast) return 'met.hu mérés (0–2 óra) → ' + forecast.model;
-      if (hasObs) return 'csak met.hu mérés (időben állandó)';
-      if (forecast) return 'csak ' + forecast.model + ' (mérés nincs betöltve)';
+      if (hasObs && activeForecast) return 'met.hu (0–2 óra) → ' + activeForecast.model;
+      if (hasObs && !activeForecast) return 'csak met.hu mérés';
+      if (activeForecast) return 'csak ' + activeForecast.model;
       return 'nincs széladat';
     }
 
@@ -620,7 +680,7 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
       return out;
     }
 
-    function isochroneRoute(start, goal, polar) {
+    function isochroneRoute(start, goal, polar, drawIso) {
       const now = Date.now();
       const dtH = 6 / 60;
       const maxH = 11;
@@ -697,7 +757,7 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
         hit = best;
       }
 
-      drawIsochrones(visited, start, goal, hit ? hit.t : 8);
+      if (drawIso) drawIsochrones(visited, start, goal, hit ? hit.t : 8);
 
       const raw = [];
       let p = hit, guard = 0;
@@ -720,42 +780,92 @@ const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.
       };
     }
 
-    function planFullRoute() {
+    async function planFullRoute() {
       if (!currentPos) { alert("Előbb állíts be pozíciót!"); return; }
-      if (!forecast && Object.keys(allStations).length === 0) {
-        alert("Töltsd le a met.hu szelet (és ha van, az előrejelzést)!");
+      const hasObs = Object.keys(allStations).length > 0;
+      const useNow = document.getElementById('useNowcast') && document.getElementById('useNowcast').checked;
+      const modelJobs = selectedModelInputs()
+        .filter(inp => forecasts[inp.value])
+        .map(inp => ({
+          id: inp.value,
+          label: inp.dataset.label || inp.value,
+          color: inp.dataset.color || '#3b82f6',
+          fc: forecasts[inp.value]
+        }));
+      const jobs = [];
+      if (useNow) {
+        if (!hasObs) { alert("A met.hu méréshez előbb töltsd le a zöld gombbal a szelet."); return; }
+        jobs.push({ id: 'nowcast', label: 'met.hu mérés', color: '#94a3b8', fc: null });
+      }
+      for (let i = 0; i < modelJobs.length; i++) jobs.push(modelJobs[i]);
+      if (!jobs.length) {
+        alert("Jelölj ki met.hu mérést, vagy töltsd le a kijelölt modelleket.");
         return;
       }
       const polar = polars[document.getElementById('boat').value];
-      const target = presets[document.getElementById('targetSelect').value];
-      if (routeLine) map.removeLayer(routeLine);
+      const target = getTarget();
+      if (!target) return;
+      routeLines.forEach(l => map.removeLayer(l));
+      routeLines = [];
+      isoLayers.forEach(l => map.removeLayer(l));
+      isoLayers = [];
       if (targetMarker) map.removeLayer(targetMarker);
 
       const status = document.getElementById('result');
       status.style.display = 'block';
-      status.innerHTML = 'Isochronok számolása...';
+      const rows = [];
+      const one = jobs.length === 1;
 
-      setTimeout(() => {
+      for (let i = 0; i < jobs.length; i++) {
+        const job = jobs[i];
+        status.innerHTML = job.label + ' számolása (' + (i+1) + '/' + jobs.length + ')...';
+        await new Promise(r => setTimeout(r, 40));
+        activeForecast = job.fc;
         const t0 = performance.now();
-        const res = isochroneRoute(currentPos, target, polar);
+        const res = isochroneRoute(currentPos, target, polar, one);
         const ms = Math.round(performance.now() - t0);
-        routeLine = L.polyline(res.path, { color: '#2563eb', weight: 5, opacity: 0.95 }).addTo(map);
-        targetMarker = L.marker([target.lat, target.lon]).addTo(map)
-          .bindPopup(`<b>${target.name}</b>`).openPopup();
-        if (res.path.length > 1) map.fitBounds(res.path, { padding: [40, 40] });
+        const line = L.polyline(res.path, { color: job.color, weight: one ? 5 : 4, opacity: 0.92 }).addTo(map);
+        line.bindTooltip(job.label, { sticky: true });
+        routeLines.push(line);
         const h = Math.floor(res.totalTime);
         const m = Math.round((res.totalTime - h) * 60);
-        status.innerHTML = `
-          <strong>${target.name}</strong> ${res.ok ? '' : '• nem ért be a célig'}<br>
-          Távolság: ~${res.totalNM.toFixed(1)} NM<br>
-          Becsült érkezés: ${h} óra ${m} perc<br>
-          <span style="font-size:0.8rem;opacity:0.85;">
-            Isochrone • szél: ${windSourceLabel()}<br>
-            sárga→piros = 0,5 / 1 / 1,5… óra (front a célra merőlegesen)
-            • ${ms} ms, ${res.isos} görbe
-          </span>
-        `;
-      }, 40);
+        rows.push({
+          label: job.label,
+          color: job.color,
+          nm: res.totalNM,
+          t: res.totalTime,
+          eta: h + ' ó ' + m + ' p',
+          ok: res.ok,
+          ms
+        });
+      }
+
+      targetMarker = L.marker([target.lat, target.lon]).addTo(map)
+        .bindPopup(`<b>${target.name}</b>`).openPopup();
+      const allPts = [];
+      routeLines.forEach(l => l.getLatLngs().forEach(p => allPts.push(p)));
+      if (allPts.length) map.fitBounds(allPts, { padding: [40, 40] });
+
+      rows.sort((a, b) => a.t - b.t);
+      const best = rows[0];
+      status.innerHTML = `
+        <strong>${target.name}</strong> • ${jobs.length} útvonal<br>
+        <table class="wind-table">
+          <thead><tr><th>Modell</th><th>ETA</th><th>Táv</th><th>Cél</th></tr></thead>
+          <tbody>
+            ${rows.map(r => `<tr>
+              <td><span class="swatch" style="background:${r.color}"></span>${r.label}${r === best ? ' <b>leggyorsabb</b>' : ''}</td>
+              <td>${r.eta}</td>
+              <td>${r.nm.toFixed(1)} NM</td>
+              <td>${r.ok ? 'igen' : 'nem ért be'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        <span style="font-size:0.8rem;opacity:0.85;">
+          ${one ? 'Isochrone görbék az egyetlen modellhez. ' : 'Több modell: csak az útvonalak (görbék ki). '}
+          met.hu keverés 0–2 óra, ha a mérés be van töltve.
+        </span>
+      `;
     }
 
     function haversineNM(lat1, lon1, lat2, lon2) {
