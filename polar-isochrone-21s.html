@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Balaton Isochrone">
+  <title>Balaton Polar Isochrone · 21s</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #e2e8f0; }
+    .header { background: #1e293b; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+    .header h1 { font-size: 1.05rem; font-weight: 600; }
+    .container { padding: 12px; max-width: 980px; margin: 0 auto; padding-bottom: 60px; }
+    .card { background: #1e293b; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+    label { display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 4px; }
+    select, input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 0.95rem; }
+    .row { display: flex; gap: 10px; }
+    .row > div { flex: 1; }
+    button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; margin-top: 8px; }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-secondary { background: #334155; color: #e2e8f0; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-warning { background: #f59e0b; color: #000; }
+    #map { height: 480px; border-radius: 12px; margin-top: 8px; }
+    .result { background: #0f766e; border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 0.9rem; }
+    .warn { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: #422006; color: #fbbf24; font-size: 0.82rem; }
+    .status { font-size: 0.78rem; color: #64748b; margin-top: 4px; }
+    .wind-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 10px; }
+    .wind-table th { background: #1e40af; color: white; padding: 8px 6px; text-align: left; }
+    .wind-table td { padding: 7px 6px; border-bottom: 1px solid #334155; }
+    .chk { display: flex; align-items: center; gap: 8px; margin: 6px 0; color: #e2e8f0; font-size: 0.9rem; cursor: pointer; }
+    .chk input { width: auto; accent-color: #3b82f6; }
+    input[type="range"] { padding: 0; height: 22px; accent-color: #3b82f6; }
+    input[type="datetime-local"] { color-scheme: dark; }
+    .swatch {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: -1px;
+      border: 1px solid rgba(255,255,255,0.4);
+      flex-shrink: 0;
+    }
+    .legend-row { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 8px 0 4px; font-size: 0.82rem; color: #e2e8f0; }
+    .legend-item { display: flex; align-items: center; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <a href="/" style="color:#94a3b8;font-size:0.75rem;text-decoration:none;">← nbsailing.hu</a>
+      <h1>Balaton Polar Isochrone · 21s</h1>
+    </div>
+    <span id="clock" style="font-size:0.8rem;color:#94a3b8;"></span>
+  </div>
+  <div class="container">
+    <div class="card">
+      <label>Hajó</label>
+      <select id="boat">
+        <option value="elan310">Nautic 311 / Elan 310</option>
+        <option value="aiolos">Aiolos HUN295 (ORC)</option>
+      </select>
+    </div>
+    <div class="card">
+      <label>Széladatok (met.hu)</label>
+      <button class="btn-success" onclick="loadWindFromWorker()">Friss szél lekérése</button>
+      <div class="status" id="windStatus">Még nem frissítve</div>
+      <div style="overflow-x:auto;">
+        <table class="wind-table">
+          <thead>
+            <tr>
+              <th>Település</th>
+              <th>Lökés irány</th>
+              <th>Lökés km/h</th>
+              <th>Átlag irány</th>
+              <th>Átlag km/h</th>
+              <th>Átlag kt</th>
+            </tr>
+          </thead>
+          <tbody id="windBody">
+            <tr><td colspan="6" style="text-align:center;color:#64748b;">Nyomd meg a zöld gombot</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div>
+          <label>Kezdőpont</label>
+          <button class="btn-secondary" onclick="getLocation()">GNSS pozíció</button>
+          <select id="startSelect" onchange="applyStartPosition()" style="margin-top:8px;">
+            <option value="">Válassz kezdőpontot…</option>
+            <option value="fured">Balatonfüred előtt</option>
+            <option value="szolo_rajt">Szóló Rajt</option>
+            <option value="szolo_keszthely">Szóló Keszthely</option>
+            <option value="szolo_almadi">Szóló Almádi</option>
+            <option value="szolo_aliga">Szóló Aliga</option>
+          </select>
+          <div class="status" id="locStatus">Még nincs kezdőpont</div>
+        </div>
+        <div>
+          <label>Célpont</label>
+          <select id="targetSelect" onchange="onTargetChange()">
+            <option value="szolo_rajt">Szóló Rajt</option>
+            <option value="szolo_keszthely">Szóló Keszthely</option>
+            <option value="szolo_aliga">Szóló Aliga</option>
+            <option value="szolo_almadi">Szóló Almádi</option>
+            <option value="manual">Manuális</option>
+          </select>
+          <div id="manualTarget" style="display:none;margin-top:8px;">
+            <div class="row">
+              <div>
+                <label>Szélesség (°)</label>
+                <input id="manualLat" inputmode="decimal" placeholder="46.75654">
+              </div>
+              <div>
+                <label>Hosszúság (°)</label>
+                <input id="manualLon" inputmode="decimal" placeholder="17.26233">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <label>Szél-előrejelzés (Open-Meteo) — több modell</label>
+      <label class="chk"><input type="checkbox" name="fcModel" value="icon_d2" data-label="ICON-D2" data-color="#3b82f6" checked> <span class="swatch" style="background:#3b82f6"></span>ICON-D2 (~2 km, ~48 óra)</label>
+      <label class="chk"><input type="checkbox" name="fcModel" value="icon_eu" data-label="ICON-EU" data-color="#22c55e"> <span class="swatch" style="background:#22c55e"></span>ICON-EU (~7 km, ~5 nap)</label>
+      <label class="chk"><input type="checkbox" name="fcModel" value="chmi_aladin_central_europe_2km" data-label="ALADIN" data-color="#06b6d4"> <span class="swatch" style="background:#06b6d4"></span>ALADIN CHMI (~2.3 km, ~3 nap)</label>
+      <label class="chk"><input type="checkbox" name="fcModel" value="geosphere_seamless" data-label="AROME GeoSphere" data-color="#f59e0b"> <span class="swatch" style="background:#f59e0b"></span>AROME GeoSphere (~2.5 km, ~3 nap)</label>
+      <label class="chk"><input type="checkbox" name="fcModel" value="gfs_seamless" data-label="GFS" data-color="#a855f7"> <span class="swatch" style="background:#a855f7"></span>GFS (~10 nap)</label>
+      <label class="chk"><input type="checkbox" id="useNowcast" data-label="met.hu mérés" data-color="#94a3b8" checked> <span class="swatch" style="background:#94a3b8"></span>met.hu mérés (csak azonnali indulásnál)</label>
+      <div class="row" style="margin-top:8px;">
+        <div>
+          <label>met.hu útvonal számítás</label>
+          <select id="nowcastMethod">
+            <option value="isochrone">Isochrone</option>
+            <option value="vmg">Mohó VMG</option>
+          </select>
+        </div>
+        <div>
+          <label>met.hu keverés az előrejelzésbe: <span id="blendVal">2.0</span> óra</label>
+          <input type="range" id="blendHours" min="0" max="2" step="0.25" value="2" oninput="document.getElementById('blendVal').textContent = Number(this.value).toFixed(2)">
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <div>
+          <label>Indulás</label>
+          <label class="chk"><input type="checkbox" id="departNow" checked onchange="onDepartChange()"> Most</label>
+          <input type="datetime-local" id="departAt" disabled>
+          <div class="status" id="departStatus">Jövőbeli indulásnál a met.hu mérés nem használható.</div>
+        </div>
+      </div>
+      <button class="btn-success" onclick="loadForecast()">Kijelölt modellek letöltése</button>
+      <div class="status" id="fcStatus">A met.hu mérés a csúszkán beállított ideig keveredik a modellel, ha le van töltve és az indulás most van.</div>
+    </div>
+    <div class="card">
+      <button class="btn-primary" onclick="planFullRoute()">Isochrone útvonal (összes kijelölt)</button>
+      <div id="result" style="display:none;" class="result"></div>
+    </div>
+    <div class="card">
+      <div id="map"></div>
+      <div id="scrubWrap" style="display:none;margin-top:10px;">
+        <div id="scrubLegend" class="legend-row"></div>
+        <label>Hajó helyzete az időben — <span id="scrubLabel">0:00</span></label>
+        <input type="range" id="scrub" min="0" max="100" value="0" step="1" oninput="onScrub()">
+        <div id="scrubBoats" class="status"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const WORKER_URL = "https://balaton-szel.4g6gh9h496.workers.dev";
+
+    const polarElan310 = {
+      winds: [6,8,10,12,14,16,20],
+      beatAngles: [43.1,41.3,41.3,40.1,39.4,39.0,39.0],
+      angles: [52,60,75,90,110,120,135,150],
+      speeds: {
+        6:  [4.87,5.16,5.38,5.55,5.61,5.45,4.93,4.13],
+        8:  [5.76,6.07,6.31,6.55,6.65,6.53,6.02,5.17],
+        10: [6.41,6.62,6.78,7.01,7.12,7.05,6.78,6.12],
+        12: [6.73,6.90,7.05,7.24,7.48,7.44,7.18,6.80],
+        14: [6.87,7.05,7.26,7.37,7.83,7.86,7.57,7.17],
+        16: [6.92,7.12,7.42,7.57,8.10,8.29,8.02,7.53],
+        20: [6.96,7.15,7.56,8.00,8.54,8.96,9.02,8.38]
+      },
+      beatVMG: [3.16,3.82,4.34,4.69,4.83,4.88,4.92]
+    };
+    const polarAiolos = {
+      winds: [6,8,10,12,14,16,20],
+      beatAngles: [43.6,41.8,40.6,39.4,38.8,38.8,39.0],
+      angles: [52,60,75,90,110,120,135,150],
+      speeds: {
+        6:  [4.64,4.90,5.09,5.37,5.46,5.29,4.75,3.99],
+        8:  [5.54,5.82,6.03,6.35,6.47,6.37,5.83,5.02],
+        10: [6.16,6.36,6.52,6.74,6.93,6.87,6.62,5.99],
+        12: [6.49,6.65,6.79,6.90,7.26,7.27,7.02,6.66],
+        14: [6.61,6.79,7.00,7.08,7.50,7.68,7.43,7.02],
+        16: [6.65,6.85,7.15,7.32,7.70,8.00,7.88,7.41],
+        20: [6.67,6.86,7.26,7.71,8.03,8.43,8.89,8.28]
+      },
+      beatVMG: [3.04,3.69,4.19,4.54,4.66,4.69,4.70]
+    };
+    const polars = { elan310: polarElan310, aiolos: polarAiolos };
+    const presets = {
+      szolo_rajt:      { lat: 46.948063, lon: 17.897098, name: "Szóló Rajt" },
+      szolo_keszthely: { lat: 46.756538, lon: 17.262328, name: "Szóló Keszthely" },
+      szolo_aliga:     { lat: 46.983157, lon: 18.156025, name: "Szóló Aliga" },
+      szolo_almadi:    { lat: 47.018845, lon: 18.017193, name: "Szóló Almádi" },
+      fured:           { lat: 46.93878,  lon: 17.91093,  name: "Balatonfüred előtt" }
+    };
+    const stationCoords = {
+      "Siófok": { lat: 46.905, lon: 18.050 },
+      "Siófok platform": { lat: 46.890, lon: 18.040 },
+      "Balatonaliga": { lat: 46.980, lon: 18.155 },
+      "Balatonalmádi": { lat: 47.025, lon: 18.020 },
+      "Balatonfüred": { lat: 46.955, lon: 17.890 },
+      "Örvényes": { lat: 46.910, lon: 17.820 },
+      "Zánka": { lat: 46.875, lon: 17.680 },
+      "Balatonőszöd": { lat: 46.805, lon: 17.800 },
+      "Balatonszemes platform": { lat: 46.810, lon: 17.780 },
+      "Fonyód": { lat: 46.755, lon: 17.550 },
+      "Szigliget": { lat: 46.800, lon: 17.430 },
+      "Szigliget platform": { lat: 46.790, lon: 17.420 },
+      "Keszthely": { lat: 46.755, lon: 17.250 },
+      "Keszthely platform": { lat: 46.740, lon: 17.260 },
+      "Balatonmáriafürdő": { lat: 46.710, lon: 17.370 }
+    };
+
+const balatonPolygon = [[46.72568, 17.24369], [46.7256, 17.24619], [46.7282, 17.24384], [46.73064, 17.2454], [46.73623, 17.24444], [46.73702, 17.2456], [46.73733, 17.24479], [46.73735, 17.24555], [46.73747, 17.24493], [46.74346, 17.2452], [46.74705, 17.24652], [46.74967, 17.24547], [46.75104, 17.24594], [46.75184, 17.24783], [46.75224, 17.2472], [46.75298, 17.24774], [46.75245, 17.24636], [46.75329, 17.24665], [46.75356, 17.24861], [46.75403, 17.24765], [46.75341, 17.24903], [46.75553, 17.24934], [46.75821, 17.25192], [46.75859, 17.25398], [46.75779, 17.25661], [46.75892, 17.25382], [46.76127, 17.25531], [46.76322, 17.25853], [46.7643, 17.26572], [46.76351, 17.26602], [46.76445, 17.26783], [46.7626, 17.2767], [46.76435, 17.27588], [46.76433, 17.27686], [46.76259, 17.27679], [46.76363, 17.27728], [46.76263, 17.27789], [46.76125, 17.28662], [46.75899, 17.29282], [46.76013, 17.29222], [46.76008, 17.2935], [46.75902, 17.293], [46.75564, 17.30145], [46.75701, 17.30126], [46.75663, 17.30335], [46.75554, 17.30172], [46.75351, 17.30757], [46.75417, 17.30834], [46.75344, 17.30825], [46.75316, 17.31091], [46.75381, 17.31556], [46.75263, 17.31831], [46.75156, 17.32746], [46.75361, 17.32926], [46.7506, 17.33102], [46.751, 17.33372], [46.74954, 17.333], [46.74722, 17.34768], [46.7531, 17.35723], [46.76147, 17.35804], [46.76855, 17.36705], [46.77062, 17.36666], [46.78688, 17.38714], [46.78686, 17.38555], [46.79497, 17.38744], [46.7956, 17.3897], [46.79496, 17.40676], [46.79713, 17.41412], [46.7954, 17.41448], [46.79221, 17.42477], [46.78687, 17.42913], [46.78513, 17.43608], [46.78502, 17.44815], [46.79017, 17.453], [46.79153, 17.46131], [46.78236, 17.50042], [46.786, 17.50714], [46.79434, 17.51445], [46.80072, 17.51719], [46.80551, 17.52377], [46.80318, 17.54108], [46.80543, 17.54648], [46.80516, 17.55383], [46.80968, 17.562], [46.80931, 17.56869], [46.81171, 17.57294], [46.82006, 17.57667], [46.8241, 17.58343], [46.82017, 17.59507], [46.82539, 17.60783], [46.82234, 17.61994], [46.82503, 17.62947], [46.82709, 17.63045], [46.82859, 17.64453], [46.83002, 17.64657], [46.8356, 17.6465], [46.8417, 17.65364], [46.84409, 17.65326], [46.85234, 17.66599], [46.8616, 17.67588], [46.86592, 17.67748], [46.86716, 17.68462], [46.87506, 17.69383], [46.87553, 17.6998], [46.87201, 17.70905], [46.8735, 17.70909], [46.87143, 17.70933], [46.8739, 17.71462], [46.8781, 17.71386], [46.87841, 17.71546], [46.87998, 17.73535], [46.87787, 17.74232], [46.88251, 17.76195], [46.88294, 17.77412], [46.8899, 17.7789], [46.897, 17.80101], [46.90205, 17.80437], [46.90916, 17.81479], [46.91099, 17.82737], [46.9189, 17.82871], [46.9235, 17.83372], [46.92234, 17.8372], [46.9184, 17.83884], [46.91667, 17.84392], [46.91327, 17.84877], [46.91154, 17.84935], [46.90481, 17.84972], [46.90383, 17.8499], [46.90332, 17.85047], [46.90198, 17.85366], [46.90186, 17.85583], [46.89908, 17.86166], [46.89754, 17.86374], [46.89734, 17.86423], [46.89768, 17.86467], [46.89449, 17.86928], [46.89289, 17.87281], [46.89058, 17.87573], [46.8899, 17.87714], [46.88918, 17.88237], [46.88812, 17.88309], [46.88826, 17.884], [46.88833, 17.88291], [46.8889, 17.8831], [46.88876, 17.88434], [46.88838, 17.8843], [46.88882, 17.88527], [46.88863, 17.891], [46.88781, 17.89135], [46.88861, 17.89149], [46.88809, 17.89189], [46.88871, 17.8919], [46.88822, 17.89247], [46.88873, 17.89301], [46.88901, 17.8928], [46.89102, 17.89411], [46.89605, 17.89635], [46.89599, 17.89693], [46.8961, 17.89651], [46.89656, 17.8967], [46.89625, 17.89732], [46.89693, 17.89672], [46.89833, 17.89732], [46.89853, 17.89823], [46.89864, 17.89737], [46.89895, 17.89745], [46.89884, 17.89821], [46.89899, 17.89746], [46.89921, 17.89754], [46.89868, 17.8988], [46.89906, 17.89851], [46.89869, 17.89984], [46.89911, 17.89848], [46.89986, 17.89793], [46.90254, 17.89891], [46.90417, 17.89663], [46.90799, 17.89295], [46.90971, 17.89334], [46.91017, 17.894], [46.91135, 17.8944], [46.91133, 17.8948], [46.91141, 17.8944], [46.91253, 17.89382], [46.91364, 17.89393], [46.91433, 17.89351], [46.91397, 17.89357], [46.91403, 17.89295], [46.91461, 17.89238], [46.91526, 17.89315], [46.91587, 17.89279], [46.91645, 17.89309], [46.91716, 17.89295], [46.91777, 17.8939], [46.91709, 17.8955], [46.91778, 17.89423], [46.9174, 17.89295], [46.91846, 17.8902], [46.91951, 17.88866], [46.92259, 17.88605], [46.92382, 17.88344], [46.92466, 17.87755], [46.92424, 17.86955], [46.92525, 17.86538], [46.92603, 17.86607], [46.92605, 17.86488], [46.92702, 17.86325], [46.92719, 17.86198], [46.92758, 17.86279], [46.92972, 17.85998], [46.93219, 17.85961], [46.93254, 17.86128], [46.93411, 17.86323], [46.93484, 17.86331], [46.93608, 17.86422], [46.93712, 17.86594], [46.93754, 17.866], [46.93792, 17.86541], [46.93779, 17.86601], [46.93888, 17.86747], [46.93762, 17.86969], [46.93849, 17.87104], [46.93772, 17.87002], [46.93771, 17.86952], [46.93892, 17.86751], [46.93975, 17.86851], [46.94008, 17.86822], [46.93887, 17.87123], [46.9398, 17.87025], [46.94035, 17.87068], [46.94425, 17.88241], [46.94835, 17.88378], [46.95082, 17.89114], [46.95304, 17.89241], [46.95198, 17.89591], [46.95306, 17.89387], [46.95702, 17.91364], [46.96068, 17.91705], [46.96268, 17.91585], [46.96737, 17.91745], [46.9665, 17.9316], [46.97673, 17.94591], [46.97413, 17.96509], [46.98039, 17.96881], [46.98246, 17.97355], [46.98384, 17.97194], [46.9822, 17.9751], [46.98322, 17.97405], [46.98423, 17.97907], [46.9828, 17.97954], [46.98631, 17.9864], [46.99857, 17.99662], [47.00378, 18.00382], [47.01088, 18.00549], [47.01481, 18.00913], [47.01725, 18.00826], [47.01927, 18.01169], [47.0185, 18.00988], [47.0251, 18.01241], [47.02858, 18.02538], [47.03378, 18.03141], [47.04058, 18.0281], [47.05086, 18.03004], [47.05886, 18.03759], [47.06291, 18.03558], [47.05855, 18.03826], [47.05474, 18.04777], [47.05642, 18.04827], [47.05403, 18.04835], [47.04182, 18.06408], [47.03724, 18.08283], [47.0314, 18.09457], [47.03173, 18.11449], [47.02323, 18.12902], [47.01898, 18.14632], [47.01792, 18.14536], [47.01116, 18.16025], [46.99704, 18.16816], [46.9881, 18.16639], [46.98687, 18.16045], [46.98543, 18.16447], [46.97119, 18.16041], [46.95459, 18.14829], [46.94151, 18.13069], [46.93075, 18.11086], [46.93217, 18.10893], [46.91637, 18.06219], [46.91482, 18.06319], [46.91269, 18.05649], [46.91087, 18.04579], [46.91295, 18.04281], [46.90857, 18.04635], [46.91058, 18.04272], [46.90634, 18.04508], [46.91175, 18.04116], [46.91251, 18.04252], [46.90715, 18.03854], [46.90597, 18.03521], [46.90274, 18.02044], [46.90356, 18.01558], [46.90284, 18.01675], [46.89485, 17.99148], [46.88752, 17.95279], [46.88374, 17.91914], [46.88297, 17.91761], [46.88232, 17.91709], [46.88215, 17.91728], [46.88163, 17.91133], [46.88083, 17.91069], [46.88103, 17.90807], [46.8796, 17.90411], [46.88045, 17.89904], [46.87687, 17.90421], [46.86671, 17.90142], [46.8614, 17.89622], [46.85761, 17.88229], [46.85506, 17.88146], [46.85758, 17.87855], [46.85365, 17.87855], [46.84939, 17.8662], [46.83967, 17.84844], [46.81331, 17.77284], [46.81584, 17.76729], [46.81223, 17.77084], [46.81535, 17.76727], [46.81296, 17.76872], [46.80979, 17.7652], [46.79789, 17.72825], [46.7914, 17.69888], [46.7914, 17.69268], [46.79377, 17.68976], [46.7912, 17.69163], [46.79255, 17.68971], [46.79026, 17.68802], [46.78535, 17.67093], [46.78171, 17.65522], [46.78285, 17.64591], [46.78029, 17.64874], [46.77925, 17.64672], [46.78195, 17.64521], [46.77703, 17.64376], [46.768, 17.61874], [46.75446, 17.56683], [46.75265, 17.56769], [46.75444, 17.5661], [46.75169, 17.55885], [46.75341, 17.55332], [46.7499, 17.55546], [46.74924, 17.55295], [46.75078, 17.55433], [46.75283, 17.55237], [46.75141, 17.55389], [46.74984, 17.55263], [46.74178, 17.53869], [46.7312, 17.52833], [46.73097, 17.52311], [46.72584, 17.51619], [46.72122, 17.50232], [46.71442, 17.47654], [46.7127, 17.47709], [46.71443, 17.47641], [46.70932, 17.45411], [46.70943, 17.44516], [46.70642, 17.43362], [46.70802, 17.43437], [46.70649, 17.41389], [46.70493, 17.41179], [46.70666, 17.40926], [46.70625, 17.39165], [46.71038, 17.35344], [46.717, 17.33085], [46.71602, 17.33345], [46.7156, 17.30934], [46.71298, 17.3], [46.71075, 17.29751], [46.71008, 17.29337], [46.71126, 17.29031], [46.71088, 17.28601], [46.70955, 17.28363], [46.70705, 17.26974], [46.70615, 17.26888], [46.7068, 17.26859], [46.7067, 17.26671], [46.70544, 17.26439], [46.70718, 17.26365], [46.70917, 17.25978], [46.71065, 17.25997], [46.70941, 17.25836], [46.71312, 17.25097], [46.71369, 17.24796], [46.71477, 17.24838], [46.71523, 17.24727], [46.71749, 17.24644], [46.72512, 17.24565], [46.72551, 17.24352], [46.72539, 17.24556], [46.72568, 17.24369]];
+
+    // Tihanyi-félsziget (szárazföld) – tilos átmenni
+    const tihanyLand = [
+      [46.928, 17.848], [46.928, 17.888], [46.922, 17.892], [46.915, 17.894],
+      [46.908, 17.894], [46.900, 17.896], [46.894, 17.896], [46.8905, 17.892],
+      [46.8905, 17.870], [46.898, 17.850], [46.910, 17.848], [46.922, 17.848]
+    ];
+
+    // Sekély / tiltott víz a szoros DK-i oldalán (Zamárdi–Szántód gázló, kardinálisoktól délre)
+    const tihanyShallow = [
+      [46.9015, 17.9140], [46.8990, 17.9125], [46.8968, 17.9097],
+      [46.8947, 17.9068], [46.8922, 17.9030], [46.8878, 17.8980],
+      [46.8820, 17.8960], [46.8800, 17.9000], [46.8800, 17.9150],
+      [46.8860, 17.9220], [46.8950, 17.9250], [46.9020, 17.9220]
+    ];
+
+    const extraForbidden = [tihanyShallow];
+
+    // Marásvonal: déli sekély pad (KDTVIZIG overlay). Szántódnál szakadás.
+    const marasPolygons = [
+      [
+        [46.71209, 17.36338], [46.71515, 17.36612], [46.7128, 17.3675],
+        [46.71468, 17.36887], [46.7128, 17.37162], [46.71021, 17.39908],
+        [46.71162, 17.42826], [46.71397, 17.44097], [46.7128, 17.44612],
+        [46.72739, 17.50311], [46.7368, 17.52886], [46.7528, 17.54465],
+        [46.77256, 17.61744], [46.78031, 17.64078], [46.78384, 17.64559],
+        [46.80429, 17.73279], [46.81322, 17.75991], [46.82356, 17.78189],
+        [46.8306, 17.80455], [46.83131, 17.80695], [46.84399, 17.84712],
+        [46.85338, 17.87012], [46.86348, 17.88523], [46.86277, 17.88866],
+        [46.8474, 17.86016], [46.83072, 17.80901], [46.82038, 17.78532],
+        [46.81686, 17.7709], [46.8131, 17.76506], [46.79924, 17.7194],
+        [46.78255, 17.64593], [46.77432, 17.62053], [46.75339, 17.55358],
+        [46.74892, 17.54602], [46.74233, 17.53675], [46.7341, 17.52817],
+        [46.71833, 17.48114], [46.71409, 17.46054], [46.71174, 17.44852],
+        [46.70821, 17.42037], [46.7075, 17.3929], [46.71197, 17.36338]
+      ],
+      [
+        [46.88648, 17.91956], [46.89516, 17.96007], [46.9097, 18.03114],
+        [46.91416, 18.04213], [46.92002, 18.07062], [46.92776, 18.09362],
+        [46.94956, 18.13585], [46.96221, 18.14821], [46.97276, 18.15508],
+        [46.98002, 18.15748], [46.98025, 18.16023], [46.97861, 18.16092],
+        [46.96374, 18.15199], [46.94499, 18.13036], [46.92881, 18.0998],
+        [46.91568, 18.05929], [46.91287, 18.04316], [46.90794, 18.03389],
+        [46.89481, 17.96694], [46.89129, 17.95801], [46.88613, 17.91956]
+      ]
+    ];
+
+    // Kényszerített hajóút: csak a cső, a kardinálisok között (ÉK -> DNY -> NY)
+    const TIHANY_CHANNEL = [
+      { lat: 46.901, lon: 17.912, name: "Szoros ÉK" },
+      { lat: 46.897, lon: 17.906, name: "Kardinálisok" },
+      { lat: 46.894, lon: 17.902, name: "Cső ÉK" },
+      { lat: 46.891, lon: 17.898, name: "Tihanyrév" },
+      { lat: 46.888, lon: 17.890, name: "Cső" },
+      { lat: 46.888, lon: 17.884, name: "Szoros NY" }
+    ];
+
+    // Nyugati medence: vízben maradó kapuk a marás fölött (É-tól DNY-ra)
+    const WEST_GATES = [
+      { lat: 46.876, lon: 17.82 },
+      { lat: 46.860, lon: 17.78 },
+      { lat: 46.847, lon: 17.74 },
+      { lat: 46.837, lon: 17.70 },
+      { lat: 46.819, lon: 17.66 },
+      { lat: 46.801, lon: 17.62 },
+      { lat: 46.786, lon: 17.56 },
+      { lat: 46.772, lon: 17.52 },
+      { lat: 46.755, lon: 17.46 },
+      { lat: 46.757, lon: 17.40 },
+      { lat: 46.736, lon: 17.34 },
+      { lat: 46.738, lon: 17.28 }
+    ];
+
+    let map, boatMarker, targetMarker, routeLine, lakePolyLayer, channelLine, landPolyLayer, shallowLayer, marasLayer;
+    let currentPos = null;
+    let allStations = {};
+    let playheadMarkers = [];
+    let timedRoutes = [];
+
+    function northEdgeOfMaras(poly) {
+      const n = Math.ceil(poly.length * 0.55);
+      let maxLon = -1e9, maxI = 0;
+      for (let i = 0; i < n; i++) {
+        if (poly[i][1] >= maxLon) { maxLon = poly[i][1]; maxI = i; }
+      }
+      return poly.slice(0, maxI + 1);
+    }
+
+    function southShoreChain() {
+      let iE = 0, iW = 0, maxLon = -1e9, minLon = 1e9;
+      for (let i = 0; i < balatonPolygon.length; i++) {
+        if (balatonPolygon[i][1] > maxLon) { maxLon = balatonPolygon[i][1]; iE = i; }
+        if (balatonPolygon[i][1] < minLon) { minLon = balatonPolygon[i][1]; iW = i; }
+      }
+      const chain = [];
+      for (let i = iE; i !== iW; i = (i + 1) % balatonPolygon.length) {
+        chain.push(balatonPolygon[i]);
+      }
+      chain.push(balatonPolygon[iW]);
+      return chain;
+    }
+
+    function shoreLatAtLon(chain, lon) {
+      for (let i = 0; i < chain.length - 1; i++) {
+        const a = chain[i], b = chain[i + 1];
+        const lo = Math.min(a[1], b[1]), hi = Math.max(a[1], b[1]);
+        if (lon < lo || lon > hi) continue;
+        const t = (Math.abs(b[1] - a[1]) < 1e-12) ? 0 : (lon - a[1]) / (b[1] - a[1]);
+        return a[0] + t * (b[0] - a[0]);
+      }
+      return null;
+    }
+
+    function extendMarasToShore() {
+      const chain = southShoreChain();
+      const out = [];
+      for (let i = 0; i < marasPolygons.length; i++) {
+        const north = northEdgeOfMaras(marasPolygons[i]);
+        const south = [];
+        for (let j = 0; j < north.length; j++) {
+          const latN = north[j][0], lon = north[j][1];
+          let latS = shoreLatAtLon(chain, lon);
+          if (latS == null || latS >= latN) latS = latN - 0.0015;
+          south.push([latS, lon]);
+        }
+        if (south.length < 2) { out.push(marasPolygons[i]); continue; }
+        out.push(north.concat(south.reverse()));
+      }
+      marasPolygons.length = 0;
+      for (let i = 0; i < out.length; i++) marasPolygons.push(out[i]);
+    }
+
+    setInterval(() => {
+      document.getElementById('clock').textContent = new Date().toLocaleTimeString('hu-HU');
+    }, 1000);
+
+    function initMap() {
+      extendMarasToShore();
+      map = L.map('map').setView([46.91, 17.87], 10);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap', maxZoom: 18
+      }).addTo(map);
+      L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+        attribution: '© OpenSeaMap', maxZoom: 18
+      }).addTo(map);
+      lakePolyLayer = L.polygon(balatonPolygon, {
+        color: '#38bdf8', weight: 1.5, fillColor: '#0ea5e9', fillOpacity: 0.08
+      }).addTo(map);
+      landPolyLayer = L.polygon(tihanyLand, {
+        color: '#f87171', weight: 1, fillColor: '#ef4444', fillOpacity: 0.08
+      }).addTo(map).bindPopup('Szárazföld (félsziget, beljebb húzva)');
+      shallowLayer = L.polygon(tihanyShallow, {
+        color: '#ef4444', weight: 1.5, dashArray: '4 4', fillColor: '#dc2626', fillOpacity: 0.22
+      }).addTo(map).bindPopup('Tiltott: sekély (Zamárdi–Szántód)');
+      marasLayer = L.layerGroup(
+        marasPolygons.map(p => L.polygon(p, {
+          color: '#b91c1c', weight: 1, fillColor: '#dc2626', fillOpacity: 0.38
+        }).bindPopup('Tiltott: marásvonal / déli sekély pad'))
+      ).addTo(map);
+      channelLine = L.polyline(TIHANY_CHANNEL.map(p => [p.lat, p.lon]), {
+        color: '#22c55e', weight: 4, opacity: 0.95
+      }).addTo(map).bindPopup('Tihanyi hajóút (cső)');
+    }
+
+    function pointInPolygon(lat, lon, poly) {
+      let inside = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const yi = poly[i][0], xi = poly[i][1];
+        const yj = poly[j][0], xj = poly[j][1];
+        const intersect = ((yi > lat) !== (yj > lat)) &&
+          (lon < (xj - xi) * (lat - yi) / ((yj - yi) || 1e-12) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }
+
+    function distToSegKm(lat, lon, a, b) {
+      const kx = 111.32 * Math.cos(lat * Math.PI / 180);
+      const ky = 110.57;
+      const ax = a.lon * kx, ay = a.lat * ky;
+      const bx = b.lon * kx, by = b.lat * ky;
+      const px = lon * kx, py = lat * ky;
+      const dx = bx - ax, dy = by - ay;
+      const len2 = dx * dx + dy * dy || 1e-9;
+      let t = ((px - ax) * dx + (py - ay) * dy) / len2;
+      t = Math.max(0, Math.min(1, t));
+      return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+    }
+
+    function nearChannel(lat, lon, maxKm) {
+      for (let i = 0; i < TIHANY_CHANNEL.length - 1; i++) {
+        if (distToSegKm(lat, lon, TIHANY_CHANNEL[i], TIHANY_CHANNEL[i + 1]) < maxKm) return true;
+      }
+      return false;
+    }
+
+    function onWater(lat, lon) {
+      if (nearChannel(lat, lon, 0.16)) return true;
+      if (pointInPolygon(lat, lon, tihanyLand)) return false;
+      for (let i = 0; i < extraForbidden.length; i++) {
+        if (pointInPolygon(lat, lon, extraForbidden[i])) return false;
+      }
+      for (let i = 0; i < marasPolygons.length; i++) {
+        if (pointInPolygon(lat, lon, marasPolygons[i])) return false;
+      }
+      return pointInPolygon(lat, lon, balatonPolygon);
+    }
+
+    function segmentOnWater(a, b, samples) {
+      const n = samples || 10;
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        const lat = a.lat + (b.lat - a.lat) * t;
+        const lon = a.lon + (b.lon - a.lon) * t;
+        if (!onWater(lat, lon)) return false;
+      }
+      return true;
+    }
+
+    function inStraitZone(lat, lon) {
+      return lon > 17.878 && lon < 17.918 && lat > 46.884 && lat < 46.908;
+    }
+
+    function needsTihanyCrossing(from, to) {
+      const east = p => p.lon > 17.888 && p.lat > 46.90;
+      const west = p => p.lon < 17.875;
+      return (east(from) && west(to)) || (west(from) && east(to));
+    }
+
+    function channelSequence(goingWest) {
+      return goingWest ? TIHANY_CHANNEL : TIHANY_CHANNEL.slice().reverse();
+    }
+
+    function nextChannelWp(pos, goingWest) {
+      const seq = channelSequence(goingWest);
+      if (pos.lat > 46.906) {
+        const gate = seq[0];
+        if (haversineKm(pos.lat, pos.lon, gate.lat, gate.lon) > 0.25) return gate;
+      }
+      for (let i = 0; i < seq.length; i++) {
+        if (haversineKm(pos.lat, pos.lon, seq[i].lat, seq[i].lon) > 0.25) return seq[i];
+      }
+      return null;
+    }
+
+    const GLAT = 0.006, GLON = 0.009;
+    let _waterIdx = null;
+    function waterIndex() {
+      if (_waterIdx) return _waterIdx;
+      const map = new Map();
+      const nodes = [];
+      const k = (i, j) => i + ':' + j;
+      for (let lat = 46.702; lat <= 47.065; lat += GLAT) {
+        for (let lon = 17.242; lon <= 18.175; lon += GLON) {
+          if (!onWater(lat, lon)) continue;
+          const i = Math.round(lat / GLAT), j = Math.round(lon / GLON);
+          const n = { lat, lon, i, j, id: nodes.length };
+          nodes.push(n);
+          map.set(k(i, j), n);
+        }
+      }
+      _waterIdx = { map, nodes, k };
+      return _waterIdx;
+    }
+
+    function snapWater(lat, lon) {
+      const g = waterIndex();
+      const i0 = Math.round(lat / GLAT), j0 = Math.round(lon / GLON);
+      let best = null, bd = 1e9;
+      for (let di = -4; di <= 4; di++) {
+        for (let dj = -4; dj <= 4; dj++) {
+          const n = g.map.get(g.k(i0 + di, j0 + dj));
+          if (!n) continue;
+          const d = haversineKm(lat, lon, n.lat, n.lon);
+          if (d < bd) { bd = d; best = n; }
+        }
+      }
+      if (best) return best;
+      for (let i = 0; i < g.nodes.length; i++) {
+        const n = g.nodes[i];
+        const d = haversineKm(lat, lon, n.lat, n.lon);
+        if (d < bd) { bd = d; best = n; }
+      }
+      return best;
+    }
+
+    function simplifyWaterPath(pts) {
+      if (pts.length < 3) return pts;
+      const out = [pts[0]];
+      for (let i = 1; i < pts.length - 1; i++) {
+        const a = out[out.length - 1], c = pts[i + 1];
+        if (haversineKm(a.lat, a.lon, c.lat, c.lon) > 2.0 || !segmentOnWater(a, c, 8)) out.push(pts[i]);
+      }
+      out.push(pts[pts.length - 1]);
+      return out;
+    }
+
+    function astarWater(from, to) {
+      const g = waterIndex();
+      const s = snapWater(from.lat, from.lon);
+      const t = snapWater(to.lat, to.lon);
+      if (!s || !t) return null;
+      if (s.id === t.id) return [{ lat: from.lat, lon: from.lon }, { lat: to.lat, lon: to.lon }];
+      const open = [{ n: s, g: 0, f: haversineKm(s.lat, s.lon, t.lat, t.lon), parent: null }];
+      const bestG = new Float64Array(g.nodes.length);
+      bestG.fill(1e15);
+      bestG[s.id] = 0;
+      const closed = new Uint8Array(g.nodes.length);
+      let guard = 0;
+      while (open.length && guard++ < 25000) {
+        let mi = 0;
+        for (let i = 1; i < open.length; i++) if (open[i].f < open[mi].f) mi = i;
+        const cur = open[mi];
+        open[mi] = open[open.length - 1];
+        open.pop();
+        if (closed[cur.n.id]) continue;
+        closed[cur.n.id] = 1;
+        if (cur.n.id === t.id) {
+          const pts = [];
+          let x = cur;
+          while (x) { pts.push({ lat: x.n.lat, lon: x.n.lon }); x = x.parent; }
+          pts.reverse();
+          return simplifyWaterPath(pts);
+        }
+        for (let di = -1; di <= 1; di++) {
+          for (let dj = -1; dj <= 1; dj++) {
+            if (!di && !dj) continue;
+            const nb = g.map.get(g.k(cur.n.i + di, cur.n.j + dj));
+            if (!nb || closed[nb.id]) continue;
+            if (!segmentOnWater(cur.n, nb, 4)) continue;
+            const ng = cur.g + haversineKm(cur.n.lat, cur.n.lon, nb.lat, nb.lon);
+            if (ng >= bestG[nb.id] - 1e-9) continue;
+            bestG[nb.id] = ng;
+            open.push({
+              n: nb, g: ng,
+              f: ng + haversineKm(nb.lat, nb.lon, t.lat, t.lon),
+              parent: cur
+            });
+          }
+        }
+      }
+      return null;
+    }
+
+    function corridorToGoal(start, goal) {
+      const pts = [{ lat: start.lat, lon: start.lon }];
+      function append(arr) {
+        if (!arr) return;
+        for (let i = 0; i < arr.length; i++) {
+          const p = arr[i];
+          const last = pts[pts.length - 1];
+          if (haversineKm(last.lat, last.lon, p.lat, p.lon) < 0.08) continue;
+          pts.push({ lat: p.lat, lon: p.lon });
+        }
+      }
+      if (needsTihanyCrossing(start, goal)) {
+        const goingWest = goal.lon < start.lon;
+        const ch = channelSequence(goingWest);
+        const a = astarWater(start, ch[0]);
+        if (a && a.length) append(a);
+        append(ch);
+        const b = astarWater(ch[ch.length - 1], goal);
+        if (b && b.length) append(b);
+        else append(goingWest ? WEST_GATES : WEST_GATES.slice().reverse());
+      } else {
+        append(astarWater(start, goal));
+      }
+      const last = pts[pts.length - 1];
+      if (haversineKm(last.lat, last.lon, goal.lat, goal.lon) > 0.12) {
+        pts.push({ lat: goal.lat, lon: goal.lon });
+      }
+      return pts;
+    }
+
+    function tell(msg) {
+      alert(msg);
+      const r = document.getElementById('result');
+      if (r) {
+        r.style.display = 'block';
+        r.innerHTML = '<div class="warn">' + String(msg).replace(/</g, '<').replace(/\n/g, '<br>') + '</div>';
+      }
+    }
+
+    async function loadWindFromWorker() {
+      const status = document.getElementById('windStatus');
+      const tbody = document.getElementById('windBody');
+      status.textContent = "Lekérés...";
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Betöltés...</td></tr>';
+      try {
+        const res = await fetch(WORKER_URL + "?t=" + Date.now());
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "Hiba");
+        allStations = data.stations || {};
+        window._obsUpdated = data.updated || new Date().toISOString();
+        const list = Object.values(allStations);
+        tbody.innerHTML = list.map(s => {
+          const gustDir = s.gust_directionText || s.directionText || "-";
+          const gustDeg = (s.gust_direction != null) ? s.gust_direction : s.direction;
+          return `<tr>
+            <td><strong>${s.name}</strong></td>
+            <td>${gustDir} (${gustDeg}°)</td>
+            <td>${s.gust_kmh}</td>
+            <td>${s.directionText || '-'} (${s.direction}°)</td>
+            <td>${s.avg_kmh}</td>
+            <td><strong>${s.avg_kt}</strong></td>
+          </tr>`;
+        }).join("");
+        status.textContent = `Frissítve: ${new Date().toLocaleTimeString('hu-HU')} • ${list.length} állomás`;
+      } catch (e) {
+        status.textContent = "Hiba: " + e.message;
+        tbody.innerHTML = `<tr><td colspan="6" style="color:#f87171;">${e.message}</td></tr>`;
+        tell('Széladat lekérés sikertelen:\n' + e.message);
+      }
+    }
+
+    function getLocation() {
+      const status = document.getElementById('locStatus');
+      status.textContent = "Keresés...";
+      navigator.geolocation.getCurrentPosition(pos => {
+        currentPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        updatePositionMarker();
+        status.textContent = `${currentPos.lat.toFixed(5)}, ${currentPos.lon.toFixed(5)}`;
+      }, err => {
+        status.textContent = "Hiba: " + err.message;
+        tell('GNSS hiba: ' + err.message);
+      }, { enableHighAccuracy: true });
+    }
+
+    function parseCoord(v) {
+      if (v == null) return NaN;
+      return parseFloat(String(v).trim().replace(',', '.'));
+    }
+
+    function applyStartPosition() {
+      const key = document.getElementById('startSelect').value;
+      if (!key || !presets[key]) return;
+      const p = presets[key];
+      currentPos = { lat: p.lat, lon: p.lon };
+      updatePositionMarker();
+      document.getElementById('locStatus').textContent = p.name + ': ' + p.lat + ', ' + p.lon;
+    }
+
+    function pad2(n) { return String(n).padStart(2, '0'); }
+    function localDateTimeValue(d) {
+      return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate())
+        + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    }
+
+    function onDepartChange() {
+      const now = document.getElementById('departNow').checked;
+      const at = document.getElementById('departAt');
+      at.disabled = now;
+      if (now) at.value = localDateTimeValue(new Date());
+      const nc = document.getElementById('useNowcast');
+      if (!now) {
+        nc.checked = false;
+        nc.disabled = true;
+        document.getElementById('departStatus').textContent = 'Jövőbeli indulás: csak előrejelzés, met.hu ki.';
+      } else {
+        nc.disabled = false;
+        document.getElementById('departStatus').textContent = 'Azonnali indulás: met.hu használható.';
+      }
+    }
+
+    function getRouteStartMs() {
+      if (document.getElementById('departNow').checked) return Date.now();
+      const v = document.getElementById('departAt').value;
+      if (!v) return Date.now();
+      const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+      if (!m) {
+        const t = new Date(v).getTime();
+        return isFinite(t) ? t : Date.now();
+      }
+      return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], 0).getTime();
+    }
+
+    function getBlendHours() {
+      const v = parseFloat(document.getElementById('blendHours').value);
+      return isFinite(v) ? v : 2;
+    }
+
+    function onTargetChange() {
+      const manual = document.getElementById('targetSelect').value === 'manual';
+      document.getElementById('manualTarget').style.display = manual ? 'block' : 'none';
+    }
+
+    function getTarget() {
+      const key = document.getElementById('targetSelect').value;
+      if (key === 'manual') {
+        const lat = parseCoord(document.getElementById('manualLat').value);
+        const lon = parseCoord(document.getElementById('manualLon').value);
+        if (!isFinite(lat) || !isFinite(lon) || lat < 46.6 || lat > 47.2 || lon < 17.1 || lon > 18.3) {
+          tell('Manuális cél: érvényes Balaton-környéki lat/lon kell (pl. 46.75654 és 17.26233).');
+          return null;
+        }
+        return { lat, lon, name: 'Manuális (' + lat.toFixed(5) + ', ' + lon.toFixed(5) + ')' };
+      }
+      return presets[key] || null;
+    }
+
+    function updatePositionMarker() {
+      if (boatMarker) map.removeLayer(boatMarker);
+      boatMarker = L.circleMarker([currentPos.lat, currentPos.lon], {
+        radius: 9, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.95
+      }).addTo(map).bindPopup("Pozíció");
+      map.setView([currentPos.lat, currentPos.lon], 12);
+    }
+
+    const GUST_WEIGHT = 0; // csak átlagszél
+    const MAX_KT = 9.2;
+
+    function stationEffective(st) {
+      const avgKt = (st.avg_kt != null) ? +st.avg_kt : ((+st.avg_kmh || 0) / 1.852);
+      const dir = +st.direction || 0;
+      return { dir, spd: avgKt, avgKt, gustKt: avgKt };
+    }
+
+    function getInterpolatedWind(lat, lon) {
+      let sumW = 0, sumDirX = 0, sumDirY = 0, sumSpd = 0;
+      for (const [name, st] of Object.entries(allStations)) {
+        const coord = stationCoords[name];
+        if (!coord) continue;
+        const d = haversineKm(lat, lon, coord.lat, coord.lon);
+        const eff = stationEffective(st);
+        if (d < 0.15) return { dir: eff.dir, spd: eff.spd };
+        const w = 1 / Math.pow(Math.max(d, 0.05), 2);
+        const rad = eff.dir * Math.PI / 180;
+        sumDirX += Math.cos(rad) * w;
+        sumDirY += Math.sin(rad) * w;
+        sumSpd += eff.spd * w;
+        sumW += w;
+      }
+      if (sumW === 0) return { dir: 225, spd: 6 };
+      const dir = (Math.atan2(sumDirY / sumW, sumDirX / sumW) * 180 / Math.PI + 360) % 360;
+      return { dir, spd: sumSpd / sumW };
+    }
+
+    function getBoatSpeed(polar, windKt, twa) {
+      const winds = polar.winds;
+      const wMin = winds[0], wMax = winds[winds.length - 1];
+      if (!(windKt > 0)) return { speed: 0, vmg: 0 };
+      let scale = 1, w = windKt;
+      if (w < wMin) { scale = w / wMin; w = wMin; }
+      else if (w > wMax) w = wMax;
+      let w1 = wMin, w2 = wMax;
+      for (let i = 0; i < winds.length - 1; i++) {
+        if (w >= winds[i] && w <= winds[i + 1]) { w1 = winds[i]; w2 = winds[i + 1]; break; }
+      }
+      if (w <= wMin) w1 = w2 = wMin;
+      if (w >= wMax) w1 = w2 = wMax;
+      const idx1 = winds.indexOf(w1);
+      if (twa <= polar.beatAngles[idx1] + 3) {
+        const ratio = (w2 === w1) ? 0 : (w - w1) / (w2 - w1);
+        const vmg = scale * (polar.beatVMG[idx1] + ratio * (polar.beatVMG[winds.indexOf(w2)] - polar.beatVMG[idx1]));
+        return { speed: vmg / Math.cos(Math.min(twa, 80) * Math.PI / 180), vmg };
+      }
+      const angles = polar.angles;
+      let a1 = angles[0], a2 = angles[angles.length - 1];
+      for (let i = 0; i < angles.length - 1; i++) {
+        if (twa >= angles[i] && twa <= angles[i + 1]) { a1 = angles[i]; a2 = angles[i + 1]; break; }
+      }
+      function sp(ww, a) { return polar.speeds[ww][angles.indexOf(a)]; }
+      const rW = (w2 === w1) ? 0 : (w - w1) / (w2 - w1);
+      const rA = (a2 === a1) ? 0 : (twa - a1) / (a2 - a1);
+      const s = scale * (
+        (sp(w1, a1) + rA * (sp(w1, a2) - sp(w1, a1))) +
+        rW * ((sp(w2, a1) + rA * (sp(w2, a2) - sp(w2, a1))) - (sp(w1, a1) + rA * (sp(w1, a2) - sp(w1, a1))))
+      );
+      return { speed: s, vmg: s * Math.cos(twa * Math.PI / 180) };
+    }
+
+    function beatAngleAt(polar, windKt) {
+      const winds = polar.winds, ba = polar.beatAngles;
+      if (windKt <= winds[0]) return ba[0];
+      if (windKt >= winds[winds.length-1]) return ba[ba.length-1];
+      for (let i = 0; i < winds.length-1; i++) {
+        if (windKt >= winds[i] && windKt <= winds[i+1]) {
+          const r = (windKt - winds[i]) / (winds[i+1] - winds[i]);
+          return ba[i] + r * (ba[i+1] - ba[i]);
+        }
+      }
+      return ba[0];
+    }
+
+    function polarActions(polar, wind) {
+      const acts = [];
+      const beat = beatAngleAt(polar, wind.spd);
+      acts.push({ twa: beat, heading: (wind.dir + beat) % 360 });
+      acts.push({ twa: beat, heading: (wind.dir - beat + 360) % 360 });
+      for (let i = 0; i < polar.angles.length; i++) {
+        const a = polar.angles[i];
+        acts.push({ twa: a, heading: (wind.dir + a) % 360 });
+        acts.push({ twa: a, heading: (wind.dir - a + 360) % 360 });
+      }
+      return acts;
+    }
+
+    let forecasts = {};
+    let activeForecast = null;
+    let isoLayers = [];
+    let routeLines = [];
+
+    function forecastGrid() {
+      const pts = [];
+      for (let lat = 46.74; lat <= 47.03; lat += 0.055) {
+        for (let lon = 17.28; lon <= 18.12; lon += 0.09) {
+          pts.push({ lat: +lat.toFixed(3), lon: +lon.toFixed(3) });
+        }
+      }
+      return pts;
+    }
+
+    function selectedModelInputs() {
+      return Array.from(document.querySelectorAll('input[name="fcModel"]:checked'));
+    }
+
+    const MODEL_DAYS = {
+      icon_d2: 2,
+      icon_eu: 7,
+      chmi_aladin_central_europe_2km: 3,
+      geosphere_seamless: 4,
+      gfs_seamless: 10
+    };
+    const MODEL_CYCLE = {
+      icon_d2: { step: 3, lagH: 2 },
+      icon_eu: { step: 3, lagH: 3 },
+      chmi_aladin_central_europe_2km: { step: 6, lagH: 4 },
+      geosphere_seamless: { step: 3, lagH: 3 },
+      gfs_seamless: { step: 6, lagH: 4 }
+    };
+
+    function modelRunMs(model, fetchedMs) {
+      const cfg = MODEL_CYCLE[model] || { step: 6, lagH: 4 };
+      const t = new Date(fetchedMs - cfg.lagH * 3600000);
+      const h = Math.floor(t.getUTCHours() / cfg.step) * cfg.step;
+      t.setUTCMinutes(0, 0, 0);
+      t.setUTCHours(h);
+      return t.getTime();
+    }
+
+    function fmtRunUtc(ms) {
+      const d = new Date(ms);
+      const dd = String(d.getUTCDate()).padStart(2, '0');
+      const mo = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const hh = String(d.getUTCHours()).padStart(2, '0');
+      return dd + '.' + mo + '. ' + hh + ' UTC';
+    }
+
+    function parseOmTime(t) {
+      if (!t) return NaN;
+      if (/Z$|[+-]\d{2}:\d{2}$/.test(t)) return Date.parse(t);
+      const m = String(t).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+      if (!m) return Date.parse(t);
+      return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], 0).getTime();
+    }
+
+    function fmtShort(ms) {
+      if (!ms) return '—';
+      const d = new Date(ms);
+      return d.toLocaleString('hu-HU', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function fetchOneModel(model, grid, status) {
+      const chunk = 8;
+      const points = [];
+      const days = MODEL_DAYS[model] || 7;
+      for (let i = 0; i < grid.length; i += chunk) {
+        const g = grid.slice(i, i + chunk);
+        const url = 'https://api.open-meteo.com/v1/forecast'
+          + '?latitude=' + g.map(p => p.lat).join(',')
+          + '&longitude=' + g.map(p => p.lon).join(',')
+          + '&hourly=wind_speed_10m,wind_direction_10m'
+          + '&wind_speed_unit=kn&forecast_days=' + days + '&timezone=Europe/Budapest'
+          + '&models=' + model;
+        const res = await fetch(url);
+        const data = await res.json();
+        const arr = Array.isArray(data) ? data : [data];
+        if (arr[0] && arr[0].error) throw new Error(model + ': ' + (arr[0].reason || arr[0].error));
+        arr.forEach((d, j) => {
+          if (!d.hourly) return;
+          points.push({
+            lat: g[j].lat, lon: g[j].lon,
+            times: d.hourly.time.map(parseOmTime),
+            spd: d.hourly.wind_speed_10m,
+            dir: d.hourly.wind_direction_10m
+          });
+        });
+        if (status) status.textContent = model + ': ' + points.length + '/' + grid.length + ' pont...';
+      }
+      if (!points.length) throw new Error(model + ': üres válasz');
+      const cov = coverageOf({ points });
+      const fetched = Date.now();
+      const runMs = modelRunMs(model, fetched);
+      return {
+        model, fetched, points,
+        from: cov && cov.from, until: cov && cov.until, days,
+        runMs, runLabel: fmtRunUtc(runMs)
+      };
+    }
+
+    async function loadForecast() {
+      const status = document.getElementById('fcStatus');
+      const inputs = selectedModelInputs();
+      if (!inputs.length) {
+        tell('Jelölj ki legalább egy előrejelzési modellt a letöltéshez.');
+        status.textContent = 'Nincs kijelölt modell.';
+        return;
+      }
+      const grid = forecastGrid();
+      forecasts = {};
+      const ok = [], bad = [];
+      for (let i = 0; i < inputs.length; i++) {
+        const model = inputs[i].value;
+        status.textContent = 'Letöltés: ' + (inputs[i].dataset.label || model) + '...';
+        try {
+          forecasts[model] = await fetchOneModel(model, grid, status);
+          ok.push(inputs[i].dataset.label || model);
+        } catch (e) {
+          bad.push((inputs[i].dataset.label || model) + ' (' + e.message + ')');
+        }
+      }
+      status.textContent = (ok.length ? ('OK: ' + ok.join(', ')) : 'Nincs modell')
+        + (bad.length ? ' • hiba: ' + bad.join('; ') : '')
+        + ' • ' + new Date().toLocaleTimeString('hu-HU');
+      const bits = [];
+      for (const k in forecasts) {
+        const inp = inputs.find(x => x.value === k);
+        bits.push((inp ? inp.dataset.label : k) + ' → ' + fmtShort(forecasts[k].until));
+      }
+      if (bits.length) status.textContent += ' • érvényes: ' + bits.join('; ');
+      if (bad.length) tell((ok.length ? 'Nem minden modell jött le:\n' : 'Egy modell sem jött le:\n') + bad.join('\n'));
+    }
+
+    function interpHourly(pt, tms) {
+      const times = pt.times;
+      if (!times || !times.length) return null;
+      if (tms <= times[0]) {
+        return { spd: pt.spd[0], dir: pt.dir[0], clamped: tms < times[0] - 120000, tUsed: times[0] };
+      }
+      if (tms > times[times.length - 1] + 60000) return null;
+      if (tms >= times[times.length - 1]) {
+        const i = times.length - 1;
+        return { spd: pt.spd[i], dir: pt.dir[i], clamped: false, tUsed: times[i] };
+      }
+      let i = 0;
+      while (i < times.length - 1 && times[i + 1] < tms) i++;
+      const r = (tms - times[i]) / (times[i + 1] - times[i]);
+      const spd = pt.spd[i] + r * (pt.spd[i + 1] - pt.spd[i]);
+      const a = pt.dir[i] * Math.PI / 180, b = pt.dir[i + 1] * Math.PI / 180;
+      const x = (1 - r) * Math.cos(a) + r * Math.cos(b);
+      const y = (1 - r) * Math.sin(a) + r * Math.sin(b);
+      const dir = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+      return { spd, dir, clamped: false, tUsed: tms };
+    }
+
+    function coverageOf(fc) {
+      if (!fc || !fc.points) return null;
+      let t0 = Infinity, t1 = -Infinity;
+      for (let i = 0; i < fc.points.length; i++) {
+        const times = fc.points[i].times;
+        if (!times || !times.length) continue;
+        if (times[0] < t0) t0 = times[0];
+        if (times[times.length - 1] > t1) t1 = times[times.length - 1];
+      }
+      if (!isFinite(t0) || !isFinite(t1)) return null;
+      return { from: t0, until: t1 };
+    }
+
+    function forecastUntil(fc) {
+      if (fc && fc.until) return fc.until;
+      const c = coverageOf(fc);
+      return c ? c.until : null;
+    }
+
+    function getForecastOnly(lat, lon, tms) {
+      const forecast = activeForecast;
+      if (!forecast || !forecast.points.length) return null;
+      let sumW = 0, sx = 0, sy = 0, ss = 0, anyClamped = false;
+      for (let i = 0; i < forecast.points.length; i++) {
+        const pt = forecast.points[i];
+        const d = haversineKm(lat, lon, pt.lat, pt.lon);
+        const w = 1 / Math.pow(Math.max(d, 0.4), 2);
+        const h = interpHourly(pt, tms);
+        if (!h) continue;
+        if (h.clamped) anyClamped = true;
+        const rad = h.dir * Math.PI / 180;
+        sx += Math.cos(rad) * w;
+        sy += Math.sin(rad) * w;
+        ss += h.spd * w;
+        sumW += w;
+      }
+      if (sumW === 0) return null;
+      return {
+        spd: ss / sumW,
+        dir: (Math.atan2(sy / sumW, sx / sumW) * 180 / Math.PI + 360) % 360,
+        clamped: anyClamped
+      };
+    }
+
+    function blendWind(a, b, wA) {
+      if (!a) return b;
+      if (!b) return a;
+      const wB = 1 - wA;
+      const ar = a.dir * Math.PI / 180, br = b.dir * Math.PI / 180;
+      const x = wA * Math.cos(ar) + wB * Math.cos(br);
+      const y = wA * Math.sin(ar) + wB * Math.sin(br);
+      return {
+        spd: wA * a.spd + wB * b.spd,
+        dir: (Math.atan2(y, x) * 180 / Math.PI + 360) % 360
+      };
+    }
+
+    function getWindAt(lat, lon, tms) {
+      const startMs = window._routeStartMs || Date.now();
+      const allowObs = window._allowObs !== false;
+      const blendH = (window._blendHours != null) ? window._blendHours : 2;
+      const hasObs = allowObs && Object.keys(allStations).length > 0;
+      const obs = hasObs ? getInterpolatedWind(lat, lon) : null;
+      const fc = getForecastOnly(lat, lon, tms);
+      if (obs && fc) {
+        if (blendH <= 0) return fc;
+        const hours = Math.max(0, (tms - startMs) / 3600000);
+        const wObs = Math.max(0, 1 - hours / blendH);
+        return blendWind(obs, fc, wObs);
+      }
+      if (obs) return obs;
+      if (fc) return fc;
+      return { dir: 225, spd: 6 };
+    }
+
+    function windSourceLabel() {
+      const hasObs = window._allowObs !== false && Object.keys(allStations).length > 0;
+      const bh = (window._blendHours != null) ? window._blendHours : 2;
+      if (hasObs && activeForecast) return 'met.hu (0–' + bh.toFixed(2) + ' óra) → ' + activeForecast.model;
+      if (hasObs && !activeForecast) return 'csak met.hu mérés';
+      if (activeForecast) return 'csak ' + activeForecast.model;
+      return 'nincs széladat';
+    }
+
+    function cellKey(lat, lon) {
+      const s = inStraitZone(lat, lon);
+      const dlat = s ? 0.00085 : 0.0026;
+      const dlon = s ? 0.00115 : 0.0036;
+      return Math.round(lat / dlat) + ':' + Math.round(lon / dlon);
+    }
+
+    function projectAlongCross(p, start, axisDeg) {
+      const d = haversineKm(start.lat, start.lon, p.lat, p.lon);
+      const brg = calcBearing(start.lat, start.lon, p.lat, p.lon);
+      let ang = (brg - axisDeg) * Math.PI / 180;
+      while (ang > Math.PI) ang -= 2 * Math.PI;
+      while (ang < -Math.PI) ang += 2 * Math.PI;
+      return { along: d * Math.cos(ang), cross: d * Math.sin(ang), lat: p.lat, lon: p.lon, t: p.t };
+    }
+
+    function drawIsochrones(visited, start, goal, maxT) {
+      isoLayers.forEach(l => map.removeLayer(l));
+      isoLayers = [];
+      const axis = calcBearing(start.lat, start.lon, goal.lat, goal.lon);
+      const all = [];
+      visited.forEach(p => all.push(projectAlongCross(p, start, axis)));
+      const tmax = Math.max(maxT, 1);
+      for (let t = 0.5; t <= tmax + 0.01; t += 0.5) {
+        const reached = [];
+        for (let i = 0; i < all.length; i++) {
+          if (all[i].t <= t + 0.04) reached.push(all[i]);
+        }
+        if (reached.length < 4) continue;
+        const binW = 0.32;
+        const bins = new Map();
+        for (let i = 0; i < reached.length; i++) {
+          const p = reached[i];
+          const b = Math.round(p.cross / binW);
+          const prev = bins.get(b);
+          if (!prev || p.along > prev.along) bins.set(b, p);
+        }
+        const pts = Array.from(bins.entries()).sort((a, b) => a[0] - b[0]).map(e => e[1]);
+        if (pts.length < 2) continue;
+        const hue = 52 - 52 * (t / tmax);
+        const isHour = Math.abs(t - Math.round(t)) < 0.05;
+        let ring = [pts[0]];
+        const rings = [];
+        for (let j = 1; j < pts.length; j++) {
+          const d = haversineKm(pts[j - 1].lat, pts[j - 1].lon, pts[j].lat, pts[j].lon);
+          if (d > 3.2) { rings.push(ring); ring = []; }
+          ring.push(pts[j]);
+        }
+        rings.push(ring);
+        rings.forEach(r => {
+          if (r.length < 2) return;
+          const line = L.polyline(r.map(p => [p.lat, p.lon]), {
+            color: 'hsl(' + hue + ',90%,55%)',
+            weight: isHour ? 3.4 : 1.7,
+            opacity: isHour ? 0.92 : 0.55
+          }).addTo(map);
+          if (isHour) line.bindTooltip(Math.round(t) + ' óra', { sticky: true });
+          isoLayers.push(line);
+        });
+      }
+    }
+
+    function smoothPath(path) {
+      const out = path.slice();
+      let guard = 0;
+      while (guard++ < 400) {
+        let cut = false;
+        for (let i = 0; i < out.length - 2; i++) {
+          const a = { lat: out[i][0], lon: out[i][1] };
+          const c = { lat: out[i+2][0], lon: out[i+2][1] };
+          const d = haversineKm(a.lat, a.lon, c.lat, c.lon);
+          if (d < 3.8 && segmentOnWater(a, c, 8)) {
+            out.splice(i + 1, 1);
+            cut = true;
+            break;
+          }
+        }
+        if (!cut) break;
+      }
+      return out;
+    }
+
+    function isochroneRoute(start, goal, polar, drawIso) {
+      const now = window._routeStartMs || Date.now();
+      const dtH = 6 / 60;
+      const maxH = 11;
+      const maxSteps = Math.round(maxH / dtH);
+      const visited = new Map();
+      const startNode = { lat: start.lat, lon: start.lon, t: 0, parent: null };
+      visited.set(cellKey(start.lat, start.lon), startNode);
+      let frontier = [startNode];
+      let hit = null;
+      const cross = needsTihanyCrossing(start, goal);
+
+      for (let step = 0; step < maxSteps && !hit; step++) {
+        const nxt = [];
+        for (let i = 0; i < frontier.length; i++) {
+          const p = frontier[i];
+          const wind = getWindAt(p.lat, p.lon, now + p.t * 3600000);
+          const strait = inStraitZone(p.lat, p.lon);
+          const dt = strait ? dtH * 0.4 : dtH;
+          const acts = polarActions(polar, wind);
+          const brgG = calcBearing(p.lat, p.lon, goal.lat, goal.lon);
+          acts.push({ twa: angleDiff(brgG, wind.dir), heading: brgG });
+          const axis = calcBearing(start.lat, start.lon, goal.lat, goal.lon);
+          const spread = [0, 35, -35, 55, -55, 75, -75, 90, -90];
+          for (let s = 0; s < spread.length; s++) {
+            const hdg = (axis + spread[s] + 360) % 360;
+            acts.push({ twa: angleDiff(hdg, wind.dir), heading: hdg });
+          }
+          if (cross) {
+            const goingWest = goal.lon < start.lon;
+            const seq = channelSequence(goingWest);
+            const gate = seq[0];
+            const brgGate = calcBearing(p.lat, p.lon, gate.lat, gate.lon);
+            acts.push({ twa: angleDiff(brgGate, wind.dir), heading: brgGate });
+            for (let k = 0; k < seq.length; k++) {
+              const wp = seq[k];
+              if (haversineKm(p.lat, p.lon, wp.lat, wp.lon) < 8) {
+                const brg = calcBearing(p.lat, p.lon, wp.lat, wp.lon);
+                acts.push({ twa: angleDiff(brg, wind.dir), heading: brg });
+              }
+            }
+          }
+          for (let a = 0; a < acts.length; a++) {
+            const act = acts[a];
+            const speed = Math.max(getBoatSpeed(polar, wind.spd, act.twa).speed, 0.55);
+            const vmgG = speed * Math.cos(angleDiff(act.heading, brgG) * Math.PI / 180);
+            const toGate = cross && p.lat > 46.906;
+            if (!strait && !toGate && angleDiff(act.heading, brgG) > 118) continue;
+            const next = destinationPoint(p.lat, p.lon, act.heading, speed * dt * 1.852);
+            if (!onWater(next.lat, next.lon)) continue;
+            if (!segmentOnWater(p, next, strait ? 8 : 4)) continue;
+            const t = p.t + dt;
+            const k = cellKey(next.lat, next.lon);
+            const prev = visited.get(k);
+            if (prev && prev.t <= t + 1e-9) continue;
+            const q = { lat: next.lat, lon: next.lon, t, parent: p };
+            visited.set(k, q);
+            nxt.push(q);
+            if (haversineNM(q.lat, q.lon, goal.lat, goal.lon) < 0.35) {
+              if (!hit || q.t < hit.t) hit = q;
+            }
+          }
+        }
+        if (!nxt.length) break;
+        frontier = nxt;
+      }
+
+      let reached = !!hit;
+      if (hit) {
+        const lastDt = haversineNM(hit.lat, hit.lon, goal.lat, goal.lon);
+        const wind = getWindAt(hit.lat, hit.lon, now + hit.t * 3600000);
+        const brg = calcBearing(hit.lat, hit.lon, goal.lat, goal.lon);
+        const spd = Math.max(getBoatSpeed(polar, wind.spd, angleDiff(brg, wind.dir)).speed, 0.6);
+        hit = { lat: goal.lat, lon: goal.lon, t: hit.t + lastDt / spd, parent: hit };
+      } else {
+        let best = null, bestD = 1e9;
+        visited.forEach(q => {
+          const d = haversineNM(q.lat, q.lon, goal.lat, goal.lon);
+          if (d < bestD) { bestD = d; best = q; }
+        });
+        hit = best;
+      }
+
+      if (drawIso) drawIsochrones(visited, start, goal, hit ? hit.t : 8);
+
+      const raw = [];
+      let p = hit, guard = 0;
+      while (p && guard++ < 500) {
+        raw.push([p.lat, p.lon]);
+        p = p.parent;
+      }
+      raw.reverse();
+      if (reached && (raw.length === 0 || haversineNM(raw[raw.length-1][0], raw[raw.length-1][1], goal.lat, goal.lon) > 0.05)) {
+        raw.push([goal.lat, goal.lon]);
+      }
+      const path = smoothPath(raw);
+      let totalNM = 0;
+      for (let i = 1; i < path.length; i++) {
+        totalNM += haversineNM(path[i-1][0], path[i-1][1], path[i][0], path[i][1]);
+      }
+      return {
+        path, totalNM, totalTime: hit ? hit.t : 0, ok: reached,
+        nodes: visited.size, isos: Math.max(1, Math.round((hit ? hit.t : 0) * 2))
+      };
+    }
+
+    function stepToward(pos, goal, stepKm) {
+      const h = calcBearing(pos.lat, pos.lon, goal.lat, goal.lon);
+      const offsets = [0, 8, -8, 16, -16, 24, -24, 32, -32, 45, -45, 60, -60];
+      for (let i = 0; i < offsets.length; i++) {
+        const heading = (h + offsets[i] + 360) % 360;
+        const next = destinationPoint(pos.lat, pos.lon, heading, stepKm);
+        if (segmentOnWater(pos, next, 8)) return { next, heading, stepKm };
+      }
+      const smaller = destinationPoint(pos.lat, pos.lon, h, stepKm * 0.4);
+      if (segmentOnWater(pos, smaller, 8)) return { next: smaller, heading: h, stepKm: stepKm * 0.4 };
+      return null;
+    }
+
+    function greedyVmgRoute(start, goal, polar) {
+      const t0 = window._routeStartMs || Date.now();
+      const path = [[start.lat, start.lon]];
+      let pos = { lat: start.lat, lon: start.lon };
+      let totalNM = 0, totalTime = 0;
+
+      function addStep(next, speed) {
+        const d = haversineNM(pos.lat, pos.lon, next.lat, next.lon);
+        if (d < 1e-6) return;
+        path.push([next.lat, next.lon]);
+        totalNM += d;
+        totalTime += d / Math.max(speed, 0.5);
+        pos = { lat: next.lat, lon: next.lon };
+      }
+
+      function greedyTo(target, maxIter, fine) {
+        for (let i = 0; i < maxIter; i++) {
+          const distNM = haversineNM(pos.lat, pos.lon, target.lat, target.lon);
+          if (distNM < (fine ? 0.12 : 0.35)) return true;
+          const stepNM = fine ? 0.05 : Math.min(0.40, distNM);
+          const wind = getWindAt(pos.lat, pos.lon, t0 + totalTime * 3600000);
+          const bearing = calcBearing(pos.lat, pos.lon, target.lat, target.lon);
+          let best = null;
+          function consider(heading, speed, scale) {
+            const testPos = destinationPoint(pos.lat, pos.lon, heading, stepNM * 1.852 * scale);
+            if (!segmentOnWater(pos, testPos, fine ? 6 : 10)) return;
+            const vmg = speed * Math.cos(angleDiff(heading, bearing) * Math.PI / 180);
+            if (vmg < -0.2 && !fine) return;
+            if (!best || vmg > best.vmg) best = { speed, next: testPos, vmg };
+          }
+          const spd0 = Math.max(getBoatSpeed(polar, wind.spd, angleDiff(bearing, wind.dir)).speed, 1.5);
+          const offs = fine ? [0, 8, -8, 16, -16, 28, -28] : [0, 10, -10];
+          for (let o = 0; o < offs.length; o++) consider((bearing + offs[o] + 360) % 360, spd0, 1);
+          if (!fine) {
+            for (let twa = 35; twa <= 165; twa += 5) {
+              const res = getBoatSpeed(polar, wind.spd, twa);
+              consider((wind.dir + twa) % 360, res.speed, 1);
+              consider((wind.dir - twa + 360) % 360, res.speed, 1);
+            }
+          }
+          if (!best) {
+            const moved = stepToward(pos, target, stepNM * 1.852);
+            if (!moved) return distNM < 0.6;
+            best = { speed: 2.5, next: moved.next };
+          }
+          addStep(best.next, best.speed);
+        }
+        return haversineNM(pos.lat, pos.lon, target.lat, target.lon) < 0.6;
+      }
+
+      function walkChannelTo(wp) {
+        const distKm = haversineKm(pos.lat, pos.lon, wp.lat, wp.lon);
+        if (distKm < 0.12) {
+          addStep(wp, 3);
+          return;
+        }
+        const n = Math.max(2, Math.ceil(distKm / 0.10));
+        const from = { lat: pos.lat, lon: pos.lon };
+        for (let s = 1; s <= n; s++) {
+          const t = s / n;
+          const next = { lat: from.lat + (wp.lat - from.lat) * t, lon: from.lon + (wp.lon - from.lon) * t };
+          const wind = getWindAt(next.lat, next.lon, t0 + totalTime * 3600000);
+          const brg = calcBearing(from.lat, from.lon, wp.lat, wp.lon);
+          const spd = Math.max(getBoatSpeed(polar, wind.spd, angleDiff(brg, wind.dir)).speed, 2);
+          addStep(next, spd);
+        }
+      }
+
+      const corridor = corridorToGoal(start, goal);
+      for (let i = 1; i < corridor.length; i++) {
+        greedyTo(corridor[i], 36, false);
+        if (haversineKm(pos.lat, pos.lon, corridor[i].lat, corridor[i].lon) > 0.35) {
+          walkChannelTo(corridor[i]);
+        }
+      }
+      if (haversineNM(pos.lat, pos.lon, goal.lat, goal.lon) > 0.35) walkChannelTo(goal);
+
+      let ok = haversineNM(pos.lat, pos.lon, goal.lat, goal.lon) < 0.8;
+      if (!ok && haversineNM(pos.lat, pos.lon, goal.lat, goal.lon) < 2.5) {
+        walkChannelTo(goal);
+        ok = haversineNM(pos.lat, pos.lon, goal.lat, goal.lon) < 0.8;
+      }
+      if (!ok && onWater(goal.lat, goal.lon)) {
+        addStep(goal, 3);
+        ok = true;
+      }
+      return { path: smoothPath(path), totalNM, totalTime, ok, nodes: path.length, isos: 0 };
+    }
+
+    function timeAlongPath(path, totalTime) {
+      const d = [0];
+      for (let i = 1; i < path.length; i++) {
+        d.push(d[i - 1] + haversineNM(path[i - 1][0], path[i - 1][1], path[i][0], path[i][1]));
+      }
+      const tot = d[d.length - 1] || 1;
+      return path.map((p, i) => ({ lat: p[0], lon: p[1], t: totalTime * d[i] / tot }));
+    }
+
+    function posAtTime(timed, T) {
+      if (!timed || !timed.length) return null;
+      if (T <= timed[0].t) return timed[0];
+      const last = timed[timed.length - 1];
+      if (T >= last.t) return last;
+      for (let i = 1; i < timed.length; i++) {
+        if (timed[i].t >= T) {
+          const a = timed[i - 1], b = timed[i];
+          const f = (T - a.t) / ((b.t - a.t) || 1e-9);
+          return { lat: a.lat + f * (b.lat - a.lat), lon: a.lon + f * (b.lon - a.lon), t: T, arrived: false };
+        }
+      }
+      return last;
+    }
+
+    function fmtHM(hours) {
+      const h = Math.floor(hours);
+      const m = Math.round((hours - h) * 60);
+      return h + ':' + String(m).padStart(2, '0');
+    }
+
+    function onScrub() {
+      const el = document.getElementById('scrub');
+      if (!el || !timedRoutes.length) return;
+      const T = (+el.value) / 60;
+      const startMs = window._routeStartMs || Date.now();
+      const clock = new Date(startMs + T * 3600000).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('scrubLabel').textContent = fmtHM(T) + '  •  ' + clock;
+      playheadMarkers.forEach(m => map.removeLayer(m));
+      playheadMarkers = [];
+      const bits = [];
+      for (let i = 0; i < timedRoutes.length; i++) {
+        const r = timedRoutes[i];
+        const p = posAtTime(r.timed, T);
+        if (!p) continue;
+        const arrived = T >= r.t - 0.01;
+        const mk = L.circleMarker([p.lat, p.lon], {
+          radius: arrived ? 8 : 7,
+          color: '#0f172a',
+          weight: 2,
+          fillColor: r.color,
+          fillOpacity: 1
+        }).addTo(map);
+        mk.bindTooltip(r.label + (arrived ? ' • cél' : ''), { permanent: false });
+        playheadMarkers.push(mk);
+        bits.push('<span class="swatch" style="background:' + r.color + '"></span>' + r.label +
+          (arrived ? ' célba ért' : ' ' + p.lat.toFixed(4) + ', ' + p.lon.toFixed(4)));
+      }
+      document.getElementById('scrubBoats').innerHTML = bits.join('<br>');
+    }
+
+    function setupScrub(rows) {
+      timedRoutes = rows;
+      playheadMarkers.forEach(m => map.removeLayer(m));
+      playheadMarkers = [];
+      const wrap = document.getElementById('scrubWrap');
+      if (!rows.length) { wrap.style.display = 'none'; return; }
+      wrap.style.display = 'block';
+      document.getElementById('scrubLegend').innerHTML = rows.map(r =>
+        '<span class="legend-item"><span class="swatch" style="background:' + r.color + '"></span>' + r.label + (r.run ? ' (' + r.run + ')' : '') + '</span>'
+      ).join('');
+      const maxH = Math.max.apply(null, rows.map(r => r.t)) || 1;
+      const el = document.getElementById('scrub');
+      el.min = 0;
+      el.max = Math.round(maxH * 60);
+      el.value = 0;
+      onScrub();
+    }
+
+    async function planFullRoute() {
+      try {
+        await planFullRouteGo();
+      } catch (e) {
+        tell('Tervezés nem indult el:\n' + (e && e.message ? e.message : e));
+      }
+    }
+
+    async function planFullRouteGo() {
+      if (!currentPos) { tell('Előbb állíts be kezdőpontot (lista vagy GNSS).'); return; }
+      window._routeStartMs = getRouteStartMs();
+      window._allowObs = document.getElementById('departNow').checked;
+      window._blendHours = getBlendHours();
+      const hasObs = Object.keys(allStations).length > 0;
+      const useNow = window._allowObs && document.getElementById('useNowcast') && document.getElementById('useNowcast').checked;
+      const nowcastMethod = (document.getElementById('nowcastMethod') || {}).value || 'isochrone';
+      const checkedModels = selectedModelInputs();
+      const missingDl = checkedModels.filter(inp => !forecasts[inp.value]);
+      if (missingDl.length) {
+        tell('A kijelölt modellek nincsenek letöltve:\n' + missingDl.map(i => i.dataset.label || i.value).join(', ') + '\n\nNyomd meg: Kijelölt modellek letöltése.');
+        return;
+      }
+      if (!checkedModels.length && !useNow) {
+        tell('Jelölj ki legalább egy előrejelzést, vagy a met.hu mérést.');
+        return;
+      }
+      const modelJobs = checkedModels.map(inp => ({
+        id: inp.value,
+        label: inp.dataset.label || inp.value,
+        color: inp.dataset.color || '#3b82f6',
+        fc: forecasts[inp.value],
+        method: 'isochrone'
+      }));
+      const jobs = [];
+      if (useNow) {
+        if (!hasObs) { tell('A met.hu méréshez előbb töltsd le a szelet (zöld gomb: Friss szél lekérése).'); return; }
+        jobs.push({
+          id: 'nowcast',
+          label: 'met.hu mérés' + (nowcastMethod === 'vmg' ? ' (mohó VMG)' : ' (isochrone)'),
+          color: '#94a3b8',
+          fc: null,
+          method: nowcastMethod
+        });
+      }
+      for (let i = 0; i < modelJobs.length; i++) jobs.push(modelJobs[i]);
+      const skipped = [];
+      const startMs = window._routeStartMs;
+      const usable = [];
+      for (let i = 0; i < jobs.length; i++) {
+        const job = jobs[i];
+        if (!job.fc) { usable.push(job); continue; }
+        const cov = coverageOf(job.fc);
+        const until = cov ? cov.until : job.fc.until;
+        if (until && startMs > until - 60000) {
+          skipped.push(job.label + ' (csak ' + fmtShort(until) + '-ig)');
+        } else {
+          usable.push(job);
+        }
+      }
+      jobs.length = 0;
+      for (let i = 0; i < usable.length; i++) jobs.push(usable[i]);
+      if (!jobs.length) {
+        tell((skipped.length ? ('Nincs modell az indulásra.\nKihagyva: ' + skipped.join('; ') + '\n') : '')
+          + (window._allowObs
+            ? 'Jelölj ki met.hu mérést, vagy töltsd le hosszabb távú modellt (GFS / ICON-EU).'
+            : 'Töltsd le GFS-t vagy ICON-EU-t (az ICON-D2 / ALADIN rövidebb távú).'));
+        return;
+      }
+      const polar = polars[document.getElementById('boat').value];
+      if (!polar) { tell('Válassz hajót.'); return; }
+      const target = getTarget();
+      if (!target) {
+        if (document.getElementById('targetSelect').value !== 'manual') tell('Válassz célpontot.');
+        return;
+      }
+      if (haversineNM(currentPos.lat, currentPos.lon, target.lat, target.lon) < 0.15) {
+        tell('A kezdőpont és a cél ugyanaz. Válassz másik célt.');
+        return;
+      }
+      routeLines.forEach(l => map.removeLayer(l));
+      routeLines = [];
+      isoLayers.forEach(l => map.removeLayer(l));
+      isoLayers = [];
+      playheadMarkers.forEach(m => map.removeLayer(m));
+      playheadMarkers = [];
+      if (targetMarker) map.removeLayer(targetMarker);
+
+      const status = document.getElementById('result');
+      status.style.display = 'block';
+      const rows = [];
+      const one = jobs.length === 1;
+
+      for (let i = 0; i < jobs.length; i++) {
+        const job = jobs[i];
+        status.innerHTML = job.label + ' számolása (' + (i+1) + '/' + jobs.length + ')...';
+        await new Promise(r => setTimeout(r, 40));
+        activeForecast = job.fc;
+        const t0 = performance.now();
+        const drawIso = one && job.method !== 'vmg';
+        const res = job.method === 'vmg'
+          ? greedyVmgRoute(currentPos, target, polar)
+          : isochroneRoute(currentPos, target, polar, drawIso);
+        const ms = Math.round(performance.now() - t0);
+        const w0 = getWindAt(currentPos.lat, currentPos.lon, window._routeStartMs);
+        const cov = coverageOf(job.fc);
+        const until = cov ? cov.until : (job.fc && job.fc.until);
+        const from = cov ? cov.from : (job.fc && job.fc.from);
+        const startMs = window._routeStartMs;
+        const clamped = !!(until && (startMs > until - 60000 || (w0 && w0.clamped)));
+        const line = L.polyline(res.path, { color: job.color, weight: one ? 5 : 4, opacity: 0.92 }).addTo(map);
+        line.bindTooltip(job.label, { sticky: true });
+        routeLines.push(line);
+        const h = Math.floor(res.totalTime);
+        const m = Math.round((res.totalTime - h) * 60);
+        rows.push({
+          label: job.label,
+          color: job.color,
+          nm: res.totalNM,
+          t: res.totalTime,
+          eta: h + ' ó ' + m + ' p',
+          ok: res.ok,
+          ms,
+          timed: timeAlongPath(res.path, res.totalTime),
+          wind: w0,
+          clamped,
+          until,
+          from,
+          run: job.fc ? (job.fc.runLabel || '') : (window._obsUpdated ? fmtShort(Date.parse(window._obsUpdated)) : 'most')
+        });
+      }
+
+      targetMarker = L.marker([target.lat, target.lon]).addTo(map)
+        .bindPopup(`<b>${target.name}</b>`).openPopup();
+      const allPts = [];
+      routeLines.forEach(l => l.getLatLngs().forEach(p => allPts.push(p)));
+      if (allPts.length) map.fitBounds(allPts, { padding: [40, 40] });
+
+      rows.sort((a, b) => a.t - b.t);
+      const best = rows[0];
+      const startLabel = new Date(window._routeStartMs).toLocaleString('hu-HU');
+      const clampedRows = rows.filter(r => r.clamped);
+      const dirTxt = d => {
+        const names = ['N','ÉK','K','DK','D','DNY','NY','ÉNY'];
+        return names[Math.round((((d % 360) + 360) % 360) / 45) % 8];
+      };
+      status.innerHTML = `
+        <strong>${target.name}</strong> • ${jobs.length} útvonal<br>
+        Indulás: ${startLabel}<br>
+        <div class="legend-row">${rows.map(r => `<span class="legend-item"><span class="swatch" style="background:${r.color}"></span>${r.label}${r.run ? ' (' + r.run + ')' : ''}</span>`).join('')}</div>
+        <table class="wind-table">
+          <thead><tr><th>Modell</th><th>Szél induláskor</th><th>Előrejelzés</th><th>ETA</th><th>Táv</th><th>Cél</th></tr></thead>
+          <tbody>
+            ${rows.map(r => `<tr${r.clamped ? ' style="background:#422006"' : ''}>
+              <td><span class="swatch" style="background:${r.color}"></span>${r.label}${r.run ? ' (' + r.run + ')' : ''}${r === best ? ' <b>leggyorsabb</b>' : ''}</td>
+              <td>${r.wind ? (r.wind.spd.toFixed(0) + ' kt ' + dirTxt(r.wind.dir) + ' (' + Math.round(r.wind.dir) + '°)') : '—'}${r.clamped ? ' *' : ''}</td>
+              <td>${r.until ? ('→ ' + fmtShort(r.until)) : 'met.hu most'}</td>
+              <td>${r.eta}</td>
+              <td>${r.nm.toFixed(1)} NM</td>
+              <td>${r.ok ? 'igen' : 'nem ért be'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        <span style="font-size:0.8rem;opacity:0.85;">
+          ${one && jobs[0].method !== 'vmg' ? 'Isochrone görbék. ' : ''}
+          ${window._allowObs ? ('met.hu keverés 0–' + window._blendHours.toFixed(2) + ' óra.') : 'Csak előrejelzés (met.hu ki).'}
+        </span>
+        ${skipped.length ? ('<div class="warn">Kihagyva (nincs adat az indulásra): ' + skipped.join('; ') + '.</div>') : ''}
+        ${clampedRows.length ? ('<div class="warn">Sárga: az indulás (' + startLabel + ') kívül esik a modellből. ' + clampedRows.map(r => r.label + ' csak ' + fmtShort(r.until) + '-ig tart').join('; ') + '.</div>') : ''}
+      `;
+      setupScrub(rows);
+    }
+
+    function haversineNM(lat1, lon1, lat2, lon2) {
+      return haversineKm(lat1, lon1, lat2, lon2) / 1.852;
+    }
+    function haversineKm(lat1, lon1, lat2, lon2) {
+      const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+    function calcBearing(lat1, lon1, lat2, lon2) {
+      const φ1 = lat1*Math.PI/180, φ2 = lat2*Math.PI/180, Δλ = (lon2-lon1)*Math.PI/180;
+      const y = Math.sin(Δλ)*Math.cos(φ2);
+      const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+      return (Math.atan2(y, x)*180/Math.PI + 360) % 360;
+    }
+    function angleDiff(a, b) {
+      let d = Math.abs(a - b) % 360;
+      return d > 180 ? 360 - d : d;
+    }
+    function destinationPoint(lat, lon, bearing, distKm) {
+      const R = 6371, δ = distKm/R, θ = bearing*Math.PI/180;
+      const φ1 = lat*Math.PI/180, λ1 = lon*Math.PI/180;
+      const φ2 = Math.asin(Math.sin(φ1)*Math.cos(δ) + Math.cos(φ1)*Math.sin(δ)*Math.cos(θ));
+      const λ2 = λ1 + Math.atan2(Math.sin(θ)*Math.sin(δ)*Math.cos(φ1), Math.cos(δ)-Math.sin(φ1)*Math.sin(φ2));
+      return { lat: φ2*180/Math.PI, lon: ((λ2*180/Math.PI)+540)%360-180 };
+    }
+
+    initMap();
+    document.getElementById('departAt').value = localDateTimeValue(new Date());
+  </script>
+</body>
+</html>
