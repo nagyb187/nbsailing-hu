@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#161210">
+<meta name="robots" content="noindex">
+<title>Összehúzódások</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #161210;
+    --surface: #241c18;
+    --fg: #f4eee6;
+    --muted: #c4b5a8;
+    --primary: #e07a5f;
+    --border: #3c312b;
+    --sans: "Segoe UI", system-ui, sans-serif;
+    --display: "Iowan Old Style", Palatino, Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100vh; background: var(--bg); }
+  body {
+    color: var(--fg);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; }
+  button:not(:disabled) { cursor: pointer; }
+  button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+  button:disabled { opacity: 0.45; }
+  .bar { height: 4px; background: var(--primary); }
+  .app {
+    max-width: 28rem;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem 1.25rem max(1.25rem, env(safe-area-inset-bottom));
+  }
+  header { display: flex; justify-content: space-between; gap: 0.75rem; align-items: flex-start; }
+  h1 { font-family: var(--display); font-size: 1.875rem; font-weight: 600; line-height: 1; margin: 0; }
+  .sub { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.875rem; }
+  .wake {
+    display: flex; align-items: center; gap: 0.5rem;
+    height: 2.75rem; padding: 0 0.75rem; border-radius: 999px;
+    background: var(--surface); color: var(--muted); font-size: 0.875rem; font-weight: 500; flex-shrink: 0;
+  }
+  .wake.on { background: var(--fg); color: var(--bg); }
+  .label { margin: 1.5rem 0 0; color: var(--muted); font-size: 0.875rem; }
+  .big {
+    margin: 0.25rem 0 0;
+    font-family: var(--display);
+    font-size: 3rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .meta { margin: 0.75rem 0 0; color: var(--muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+  .list {
+    margin-top: 1.25rem;
+    background: var(--surface);
+    border-radius: 1.5rem;
+    min-height: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .list-head, .cols, .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.5rem;
+    padding: 0 1rem;
+  }
+  .list-head { padding-top: 1rem; font-size: 0.875rem; color: var(--muted); }
+  .list-head span:last-child { text-align: right; }
+  .cols { padding-bottom: 0.5rem; font-size: 0.75rem; color: var(--muted); }
+  .cols span:not(:first-child), .row span:not(:first-child) { text-align: right; }
+  .scroll { overflow-y: auto; min-height: 0; flex: 1; }
+  .row {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .row:last-child { border-bottom: 0; }
+  .muted { color: var(--muted); }
+  .latest { font-weight: 500; }
+  footer { padding-top: 1rem; }
+  .chips { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .chip {
+    flex: 1; height: 2.75rem; border-radius: 999px; background: var(--surface); font-size: 0.875rem; font-weight: 500;
+  }
+  .chip.danger { background: var(--fg); color: var(--bg); }
+  .banner { margin: 0 0 0.75rem; text-align: center; color: var(--muted); font-size: 0.875rem; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .mark {
+    height: 5rem; border-radius: 999px; font-size: 1.5rem; font-weight: 500;
+    background: var(--surface); color: var(--muted);
+  }
+  .mark.on { background: var(--primary); color: var(--bg); }
+  .note { margin: 0.75rem 0 0; text-align: center; color: var(--muted); font-size: 0.75rem; }
+  .spacer { flex: 1; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="bar"></div>
+<div class="app" id="app"></div>
+<script>
+const KEY = "osszehuzodas.v1";
+
+function formatGap(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return "—";
+  const totalSeconds = Math.round(ms / 1000);
+  if (totalSeconds < 600) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    if (minutes === 0) return seconds + " mp";
+    return minutes + " perc " + seconds + " mp";
+  }
+  return Math.round(ms / 60000) + " perc";
+}
+
+function formatStamp(ts, now) {
+  const when = new Date(ts);
+  const today = new Date(now);
+  const sameDay = when.getFullYear() === today.getFullYear() && when.getMonth() === today.getMonth() && when.getDate() === today.getDate();
+  const opts = sameDay
+    ? { hour: "2-digit", minute: "2-digit", second: "2-digit" }
+    : { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" };
+  return new Intl.DateTimeFormat("hu-HU", opts).format(when);
+}
+
+function formatAbsolute(ts) {
+  return new Intl.DateTimeFormat("hu-HU", {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  }).format(ts);
+}
+
+function loadRows() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(KEY) || "[]");
+    if (!Array.isArray(parsed)) return [];
+    const sorted = parsed.filter((row) => {
+      if (!row || typeof row.start !== "number" || !Number.isFinite(row.start)) return false;
+      if (row.end === null) return true;
+      return typeof row.end === "number" && Number.isFinite(row.end) && row.end >= row.start;
+    }).sort((a, b) => a.start - b.start);
+    let seenOpen = false;
+    const cleaned = [];
+    for (let i = sorted.length - 1; i >= 0; i -= 1) {
+      const row = sorted[i];
+      if (row.end === null) {
+        if (seenOpen) continue;
+        seenOpen = true;
+      }
+      cleaned.push(row);
+    }
+    return cleaned.reverse();
+  } catch {
+    return [];
+  }
+}
+
+function saveRows(rows) {
+  localStorage.setItem(KEY, JSON.stringify(rows));
+}
+
+function durationMs(row, now) {
+  return Math.max(0, (row.end == null ? now : row.end) - row.start);
+}
+
+function intervalMs(rows, index) {
+  if (index <= 0) return null;
+  return rows[index].start - rows[index - 1].start;
+}
+
+function shareText(rows, now) {
+  const lines = ["Összehúzódások", ""];
+  rows.forEach((row, index) => {
+    const interval = intervalMs(rows, index);
+    const ended = row.end == null ? "tart" : formatAbsolute(row.end);
+    const parts = [
+      (index + 1) + ". " + formatAbsolute(row.start) + " – " + ended,
+      "időtartam " + formatGap(durationMs(row, now)),
+    ];
+    if (interval != null) parts.push("időköz " + formatGap(interval));
+    lines.push(parts.join("   ·   "));
+  });
+  return lines.join("\n");
+}
+
+function esc(value) {
+  return String(value)
+    .replace(/&/g, "&" + "amp;")
+    .replace(/</g, "&" + "lt;")
+    .replace(/>/g, "&" + "gt;");
+}
+
+let rows = loadRows();
+let previous = null;
+let banner = "";
+let armClear = false;
+let wakeLock = null;
+let wakeWanted = false;
+
+function setBanner(text) {
+  banner = text;
+  window.setTimeout(() => {
+    if (banner === text) {
+      banner = "";
+      render();
+    }
+  }, 2800);
+}
+
+async function holdWake() {
+  if (!("wakeLock" in navigator)) {
+    wakeWanted = false;
+    setBanner("Ez a böngésző nem engedi a képernyő ébren tartását.");
+    render();
+    return;
+  }
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => {
+      wakeLock = null;
+      render();
+    });
+  } catch {
+    setBanner("Ez a böngésző nem engedi a képernyő ébren tartását.");
+  }
+  render();
+}
+
+function begin() {
+  const last = rows.at(-1);
+  if (last && last.end == null) {
+    setBanner("Már tart egy összehúzódás.");
+    render();
+    return;
+  }
+  previous = rows;
+  rows = rows.concat([{ start: Date.now(), end: null }]);
+  armClear = false;
+  saveRows(rows);
+  if (wakeWanted && !wakeLock) void holdWake();
+  try { navigator.vibrate?.(18); } catch { /* ignore */ }
+  render();
+}
+
+function finish() {
+  const last = rows.at(-1);
+  if (!last || last.end != null) return;
+  previous = rows;
+  const end = Math.max(Date.now(), last.start);
+  rows = rows.slice(0, -1).concat([{ start: last.start, end }]);
+  armClear = false;
+  saveRows(rows);
+  try { navigator.vibrate?.(18); } catch { /* ignore */ }
+  render();
+}
+
+function undo() {
+  if (!previous) return;
+  rows = previous;
+  previous = null;
+  armClear = false;
+  saveRows(rows);
+  setBanner("Visszavonva.");
+  render();
+}
+
+function clearAll() {
+  previous = rows;
+  rows = [];
+  armClear = false;
+  saveRows(rows);
+  setBanner("A lista törölve.");
+  render();
+}
+
+async function copyList() {
+  if (!rows.length) return;
+  const text = shareText(rows, Date.now());
+  try {
+    await navigator.clipboard.writeText(text);
+    setBanner("A lista a vágólapon van — beilleszthető üzenetbe.");
+  } catch {
+    const area = document.createElement("textarea");
+    area.value = text;
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    area.remove();
+    setBanner(ok ? "A lista a vágólapon van — beilleszthető üzenetbe." : "A másolás nem sikerült ebben a böngészőben.");
+  }
+  render();
+}
+
+function hero(now) {
+  const open = rows.at(-1) && rows.at(-1).end == null ? rows.at(-1) : null;
+  const lastDone = [...rows].reverse().find((row) => row.end != null) || null;
+  const interval = rows.length > 1 ? intervalMs(rows, rows.length - 1) : null;
+  if (!rows.length) {
+    return '<p class="label">Utolsó időköz</p><p class="big">Még nincs jelölés</p><p class="meta">Az elejét és a végét külön gombbal jelöld. A legutóbbi felül jelenik meg.</p>';
+  }
+  if (interval != null) {
+    const small = open
+      ? "Tart " + formatGap(durationMs(open, now))
+      : "Utolsó időtartam " + formatGap(durationMs(lastDone, now));
+    return '<p class="label">Utolsó időköz</p><p class="big">' + esc(formatGap(interval)) + '</p><p class="meta">' + esc(small + " · " + rows.length + " összehúzódás") + "</p>";
+  }
+  if (open) {
+    return '<p class="label">Tart</p><p class="big">' + esc(formatGap(durationMs(open, now))) + '</p><p class="meta">Még nincs időköz</p>';
+  }
+  return '<p class="label">Utolsó időtartam</p><p class="big">' + esc(formatGap(durationMs(lastDone, now))) + '</p><p class="meta">Még nincs időköz</p>';
+}
+
+function listHtml(now) {
+  if (!rows.length) return '<div class="spacer"></div>';
+  const body = [...rows.keys()].reverse().map((index) => {
+    const row = rows[index];
+    const gap = intervalMs(rows, index);
+    const latest = index === rows.length - 1;
+    return '<li class="row"><time>' + esc(formatStamp(row.start, now)) + "</time><span class=\"" + (latest ? "latest" : "muted") + "\">" + esc(formatGap(durationMs(row, now))) + '</span><span class="muted">' + esc(gap == null ? "első" : formatGap(gap)) + "</span></li>";
+  }).join("");
+  return '<section class="list"><div class="list-head"><span>Napló</span><span></span><span>' + rows.length + '</span></div><div class="cols"><span>Kezdet</span><span>Időtartam</span><span>Időköz</span></div><div class="scroll"><ol style="margin:0;padding:0;list-style:none">' + body + "</ol></div></section>";
+}
+
+function chips() {
+  if (!rows.length && !previous && !armClear) return "";
+  if (armClear) {
+    return '<div class="chips"><button class="chip" type="button" data-action="cancel">Mégse</button><button class="chip danger" type="button" data-action="clear">Törlöm</button></div>';
+  }
+  return '<div class="chips"><button class="chip" type="button" data-action="copy"' + (rows.length ? "" : " disabled") + '>Másolás</button><button class="chip" type="button" data-action="undo"' + (previous ? "" : " disabled") + '>Visszavonás</button><button class="chip" type="button" data-action="ask-clear"' + (rows.length ? "" : " disabled") + ">Törlés</button></div>";
+}
+
+function render() {
+  const now = Date.now();
+  const open = rows.at(-1) && rows.at(-1).end == null;
+  const root = document.getElementById("app");
+  root.innerHTML =
+    '<header><div><h1>Összehúzódások</h1><p class="sub">Eleje, amikor kezdődik. Vége, amikor elmúlik.</p></div><button class="wake' + (wakeLock ? " on" : "") + '" type="button" data-action="wake" aria-pressed="' + (wakeLock ? "true" : "false") + '">Ébren</button></header>' +
+    "<section>" + hero(now) + "</section>" +
+    listHtml(now) +
+    "<footer>" + chips() +
+    (banner ? '<p class="banner" role="status">' + esc(banner) + "</p>" : "") +
+    '<div class="actions"><button class="mark' + (open ? "" : " on") + '" type="button" data-action="begin"' + (open ? " disabled" : "") + '>Eleje</button><button class="mark' + (open ? " on" : "") + '" type="button" data-action="finish"' + (open ? "" : " disabled") + '>Vége</button></div>' +
+    '<p class="note">Az időtartam és az időköz 10 perc alatt perc és másodperc, azon felül a legközelebbi perc. Csak ezen a készüléken tárolódik.</p></footer>';
+}
+
+document.getElementById("app").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-action]");
+  if (!button || button.disabled) return;
+  const action = button.getAttribute("data-action");
+  if (action === "begin") begin();
+  else if (action === "finish") finish();
+  else if (action === "undo") undo();
+  else if (action === "ask-clear") { armClear = true; render(); }
+  else if (action === "cancel") { armClear = false; render(); }
+  else if (action === "clear") clearAll();
+  else if (action === "copy") void copyList();
+  else if (action === "wake") {
+    if (wakeLock) {
+      wakeWanted = false;
+      void wakeLock.release();
+      return;
+    }
+    wakeWanted = true;
+    void holdWake();
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && wakeWanted && !wakeLock) void holdWake();
+});
+
+render();
+setInterval(render, 1000);
+</script>
+</body>
+</html>
