@@ -19,11 +19,12 @@
     --display: "Iowan Old Style", Palatino, Georgia, serif;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; min-height: 100vh; background: var(--bg); }
+  html, body { margin: 0; height: 100%; background: var(--bg); }
   body {
     color: var(--fg);
     font-family: var(--sans);
     -webkit-font-smoothing: antialiased;
+    overflow: hidden;
   }
   button { font: inherit; color: inherit; border: 0; background: none; }
   button:not(:disabled) { cursor: pointer; }
@@ -33,12 +34,14 @@
   .app {
     max-width: 28rem;
     margin: 0 auto;
-    min-height: 100vh;
+    height: 100dvh;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    padding: 1.25rem 1.25rem max(1.25rem, env(safe-area-inset-bottom));
+    overflow: hidden;
+    padding: 1.25rem 1.25rem max(1rem, env(safe-area-inset-bottom));
   }
-  header { display: flex; justify-content: space-between; gap: 0.75rem; align-items: flex-start; }
+  header { display: flex; justify-content: space-between; gap: 0.75rem; align-items: flex-start; flex-shrink: 0; }
   h1 { font-family: var(--display); font-size: 1.875rem; font-weight: 600; line-height: 1; margin: 0; }
   .sub { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.875rem; }
   .wake {
@@ -48,6 +51,7 @@
   }
   .wake.on { background: var(--fg); color: var(--bg); }
   .label { margin: 1.5rem 0 0; color: var(--muted); font-size: 0.875rem; }
+  section { flex-shrink: 0; }
   .big {
     margin: 0.25rem 0 0;
     font-family: var(--display);
@@ -57,7 +61,7 @@
   }
   .meta { margin: 0.75rem 0 0; color: var(--muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
   .list {
-    margin-top: 1.25rem;
+    margin-top: 0.75rem;
     background: var(--surface);
     border-radius: 1.5rem;
     min-height: 0;
@@ -87,7 +91,7 @@
   .row:last-child { border-bottom: 0; }
   .muted { color: var(--muted); }
   .latest { font-weight: 500; }
-  footer { padding-top: 1rem; }
+  footer { padding-top: 0.75rem; flex-shrink: 0; }
   .chips { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
   .chip {
     flex: 1; height: 2.75rem; border-radius: 999px; background: var(--surface); font-size: 0.875rem; font-weight: 500;
@@ -346,11 +350,11 @@ function render() {
   root.innerHTML =
     '<header><div><h1>Összehúzódások</h1><p class="sub">Eleje, amikor kezdődik. Vége, amikor elmúlik.</p></div><button class="wake' + (wakeLock ? " on" : "") + '" type="button" data-action="wake" aria-pressed="' + (wakeLock ? "true" : "false") + '">Ébren</button></header>' +
     "<section>" + hero(now) + "</section>" +
-    listHtml(now) +
     "<footer>" + chips() +
     (banner ? '<p class="banner" role="status">' + esc(banner) + "</p>" : "") +
     '<div class="actions"><button class="mark' + (open ? "" : " on") + '" type="button" data-action="begin"' + (open ? " disabled" : "") + '>Eleje</button><button class="mark' + (open ? " on" : "") + '" type="button" data-action="finish"' + (open ? "" : " disabled") + '>Vége</button></div>' +
-    '<p class="note">Az időtartam és az időköz 10 perc alatt perc és másodperc, azon felül a legközelebbi perc. Csak ezen a készüléken tárolódik.</p></footer>';
+    '<p class="note">Az időtartam és az időköz 10 perc alatt perc és másodperc, azon felül a legközelebbi perc. Csak ezen a készüléken tárolódik.</p></footer>' +
+    listHtml(now);
 }
 
 document.getElementById("app").addEventListener("click", (event) => {
