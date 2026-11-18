@@ -424,6 +424,15 @@
       background: #c9ced3;
       color: var(--navy);
     }
+    .place--bronze {
+      background: #d29a6a;
+      color: var(--navy);
+    }
+    .place-group {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
     .result-meta {
       font-size: 0.92rem;
       color: var(--muted);
@@ -768,20 +777,20 @@
           <li class="result">
             <div class="result-top">
               <h3><span data-lang="hu">Kékszalag Port évadzáró, 2024</span><span data-lang="en">Kékszalag Port season closer, 2024</span></h3>
-              <span class="place place--silver"><span data-lang="hu">2. hely</span><span data-lang="en">2nd</span></span>
+              <span class="place place--silver"><span data-lang="hu">Nautic 2. hely</span><span data-lang="en">Nautic 2nd</span></span>
             </div>
             <p class="result-meta"><em>Stalker</em></p>
           </li>
           <li class="result">
             <div class="result-top">
               <h3>Svert Kupa, Flying Dutchman</h3>
-              <span class="place"><span data-lang="hu">1. hely, 2021</span><span data-lang="en">1st, 2021</span></span>
+              <span class="place-group">
+                <span class="place"><span data-lang="hu">1. hely, 2021</span><span data-lang="en">1st, 2021</span></span>
+                <span class="place place--silver"><span data-lang="hu">2. hely, 2020</span><span data-lang="en">2nd, 2020</span></span>
+                <span class="place place--bronze"><span data-lang="hu">3. hely, 2019</span><span data-lang="en">3rd, 2019</span></span>
+              </span>
             </div>
             <p class="result-meta"><span data-lang="hu">5–7 méteres kategória</span><span data-lang="en">5–7 m class</span></p>
-            <ul class="result-places">
-              <li data-lang="hu">2019: 3. hely · 2020: 2. hely · 2021: 1. hely</li>
-              <li data-lang="en">2019: 3rd · 2020: 2nd · 2021: 1st</li>
-            </ul>
           </li>
         </ol>
 
