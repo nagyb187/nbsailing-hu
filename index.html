@@ -428,6 +428,29 @@
       background: #d29a6a;
       color: var(--navy);
     }
+    .result-photo {
+      display: block;
+      width: 160px;
+      height: auto;
+      margin-top: 0.9rem;
+      border-radius: 2px;
+    }
+    .highlight {
+      display: grid;
+      gap: 1.25rem;
+      margin: 2.5rem 0 0;
+      padding: 1.5rem;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+    .highlight-photo { margin: 0; max-width: 480px; }
+    .highlight-photo img { display: block; width: 100%; height: auto; }
+    .highlight-photo figcaption { font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem; }
+    .highlight-text h3 { font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -0.02em; margin: 0.3rem 0 0.6rem; }
+    .highlight-text p:last-child { color: var(--muted); margin: 0; }
+    @media (min-width: 800px) {
+      .highlight { grid-template-columns: minmax(0, 420px) 1fr; align-items: center; gap: 2.5rem; padding: 2rem; }
+    }
     .place-group {
       display: inline-flex;
       flex-wrap: wrap;
@@ -793,6 +816,21 @@
             <p class="result-meta"><span data-lang="hu">5–7 méteres kategória</span><span data-lang="en">5–7 m class</span></p>
           </li>
         </ol>
+
+        <div class="highlight">
+          <figure class="highlight-photo">
+            <img src="img/byc-2026-trophy.jpg" width="900" height="1200" loading="lazy"
+              alt="A 2026-os BYC Egyszemélyes Balatonkerülő 11M Open győztesének fa vitorla alakú díja és érme."
+              data-alt-hu="A 2026-os BYC Egyszemélyes Balatonkerülő 11M Open győztesének fa vitorla alakú díja és érme."
+              data-alt-en="The wooden sail-shaped trophy and medal for winning the 11M Open class, BYC Single-handed Round Lake Balaton 2026.">
+            <figcaption><span data-lang="hu">Az első egyszemélyes Balatonkerülőm díja, 2026</span><span data-lang="en">Trophy from my first single-handed Round Lake Balaton, 2026</span></figcaption>
+          </figure>
+          <div class="highlight-text">
+            <p class="eyebrow">2026 · BYC</p>
+            <h3><span data-lang="hu">Egyedül a Balaton körül</span><span data-lang="en">Alone around Lake Balaton</span></h3>
+            <p><span data-lang="hu">1. hely, 11 m Open · 5. abszolút a 14 indulóból · <em>Stalker</em>, Nautic 311</span><span data-lang="en">1st, 11 m Open · 5th overall of 14 · <em>Stalker</em>, Nautic 311</span></p>
+          </div>
+        </div>
 
         <figure class="photo photo--full">
           <img
