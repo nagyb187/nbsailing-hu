@@ -1,194 +1,1024 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NB Sailing</title>
-   
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search).get("lang");
+        var stored = localStorage.getItem("nbsailing-lang");
+        var lang = (q === "en" || q === "hu") ? q : (stored === "en" ? "en" : "hu");
+        document.documentElement.lang = lang;
+        if (q === "en" || q === "hu") localStorage.setItem("nbsailing-lang", q);
+      } catch (e) {}
+    })();
+  </script>
+  <meta name="theme-color" content="#0b1a28">
+  <meta name="description" id="meta-desc" content="Nagy Benedek, NB Sailing. Ötgyerekes apuka, aki a Balatonon versenyez. Budapest.">
+  <title>NB Sailing · Nagy Benedek</title>
+  <script>
+    (function () {
+      try {
+        if (document.documentElement.lang === "en") {
+          document.title = "NB Sailing · Benedek Nagy";
+          var d = document.getElementById("meta-desc");
+          if (d) d.setAttribute("content", "Benedek Nagy, NB Sailing. A father of five who races on Lake Balaton. Budapest.");
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&amp;family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b1a28'/%3E%3Cpolygon points='6,6 26,16 6,26' fill='%23e6b423'/%3E%3Cpolygon points='6,11 16,16 6,21' fill='%230b1a28'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --navy: #0b1a28;
+      --navy-2: #132536;
+      --navy-3: #1c3348;
+      --ink: #16202a;
+      --paper: #f6f3ec;
+      --paper-2: #efeae0;
+      --muted: #5a6670;
+      --yellow: #e6b423;
+      --yellow-soft: #f3d56a;
+      --line: rgba(11, 26, 40, 0.12);
+      --line-strong: rgba(11, 26, 40, 0.22);
+      --max: 72rem;
+      --text: 38rem;
+      --pad: clamp(1.25rem, 4vw, 2.5rem);
+      --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
+      --font-sans: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html {
+      scroll-behavior: smooth;
+      -webkit-text-size-adjust: 100%;
+      background: var(--navy);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    html[lang="en"] [data-lang="hu"],
+    html:not([lang="en"]) [data-lang="en"] {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      background: var(--navy);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 1.0625rem;
+      line-height: 1.65;
+      font-weight: 400;
+    }
+
+    img { max-width: 100%; height: auto; display: block; }
+    a { color: inherit; }
+    h1, h2, h3, h4 {
+      font-family: var(--font-serif);
+      font-optical-sizing: auto;
+      font-variation-settings: "SOFT" 35, "WONK" 0;
+      font-weight: 500;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    p { margin: 0 0 1.1em; }
+    p:last-child { margin-bottom: 0; }
+    em { font-style: italic; }
+
+    :focus-visible {
+      outline: 2px solid var(--yellow);
+      outline-offset: 3px;
+    }
+
+    ::selection {
+      background: var(--yellow);
+      color: var(--navy);
+    }
+
+    .skip {
+      position: absolute;
+      left: -999px;
+      top: 0;
+      background: var(--yellow);
+      color: var(--navy);
+      padding: 0.5rem 1rem;
+      z-index: 100;
+      font-weight: 600;
+    }
+    .skip:focus { left: 0.75rem; top: 0.75rem; }
+
+    /* ——— Header ——— */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(11, 26, 40, 0.94);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: #f6f3ec;
+      border-bottom: 1px solid rgba(230, 180, 35, 0.28);
+    }
+    .header-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0.85rem var(--pad);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.7rem 1.15rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      text-decoration: none;
+      color: inherit;
+      margin-right: auto;
+    }
+    .brand-mark {
+      width: 1.7rem;
+      height: 1.15rem;
+      flex-shrink: 0;
+    }
+    .brand-name {
+      font-family: var(--font-sans);
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    .greeting {
+      color: var(--yellow);
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+      font-size: 0.95rem;
+      margin-left: 0.15rem;
+    }
+    .lang-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+    }
+    .lang-switch a {
+      color: rgba(246, 243, 236, 0.5);
+      text-decoration: none;
+      padding: 0.2rem 0.15rem;
+    }
+    .lang-switch a:hover { color: var(--yellow-soft); }
+    html[lang="hu"] .lang-switch [data-set-lang="hu"],
+    html[lang="en"] .lang-switch [data-set-lang="en"] {
+      color: var(--yellow);
+    }
+    .lang-sep {
+      color: rgba(246, 243, 236, 0.32);
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+    .site-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 1.15rem;
+      font-size: 0.92rem;
+      width: 100%;
+      order: 3;
+    }
+    .site-nav a {
+      text-decoration: none;
+      color: rgba(246, 243, 236, 0.82);
+      border-bottom: 1px solid transparent;
+      padding-bottom: 0.1rem;
+    }
+    .site-nav a:hover {
+      color: var(--yellow);
+      border-bottom-color: var(--yellow);
+    }
+    @media (max-width: 899px) {
+      .site-nav {
+        display: grid;
+        grid-template-columns: repeat(3, max-content);
+        column-gap: 1.1rem;
+        row-gap: 0.4rem;
+      }
+    }
+    @media (min-width: 900px) {
+      .site-nav {
+        width: auto;
+        order: 2;
+        margin-left: auto;
+      }
+      .lang-switch { order: 3; }
+    }
+
+    /* ——— Hero ——— */
+    .hero {
+      background: var(--navy);
+      color: var(--paper);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: "";
+      display: block;
+      height: 4px;
+      background: var(--yellow);
+    }
+    .hero-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: clamp(2.4rem, 6vw, 4.8rem) var(--pad) clamp(2.6rem, 6vw, 5rem);
+      display: grid;
+      gap: 2.2rem;
+      align-items: center;
+    }
+    @media (min-width: 840px) {
+      .hero-inner {
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 3.5rem;
+      }
+    }
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--yellow);
+      margin-bottom: 1rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.6rem, 7.5vw, 4.6rem);
+      font-weight: 500;
+      margin-bottom: 0.85rem;
+      color: #fff;
+    }
+    .slogan {
+      font-family: var(--font-serif);
+      font-size: clamp(1.25rem, 2.6vw, 1.7rem);
+      font-weight: 400;
+      font-style: italic;
+      font-variation-settings: "SOFT" 50, "WONK" 0;
+      color: var(--yellow-soft);
+      line-height: 1.35;
+      margin: 0 0 1.4rem;
+      max-width: 22ch;
+    }
+    .hero-lead {
+      max-width: 38em;
+      color: rgba(246, 243, 236, 0.82);
+      font-size: 1.08rem;
+    }
+
+    /* ——— Photos ——— */
+    .photo {
+      margin: 0;
+      background: transparent;
+      border: 0;
+      min-height: 0;
+    }
+    .photo img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .photo figcaption {
+      position: static;
+      padding: 0.55rem 0 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--muted);
+      background: none;
+    }
+    .photo--hero img {
+      border: 1px solid rgba(230, 180, 35, 0.22);
+    }
+    .photo-stack {
+      display: grid;
+      gap: 1.15rem;
+      align-content: start;
+    }
+    .photo--heritage img {
+      border: 1px solid var(--line);
+    }
+    .photo--full {
+      margin-top: 2.25rem;
+    }
+
+    /* ——— Layout ——— */
+    .wrap {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--pad);
+    }
+    .section {
+      padding: clamp(3rem, 7vw, 5.25rem) 0;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+      scroll-margin-top: 4.25rem;
+    }
+    .hero, .site-footer { scroll-margin-top: 4.25rem; }
+    .section--alt { background: var(--paper-2); }
+    .section--navy {
+      background: var(--navy);
+      color: var(--paper);
+      border-bottom: 0;
+    }
+    .section--navy .section-kicker { color: var(--yellow); }
+    .section--navy .lede,
+    .section--navy p { color: rgba(246, 243, 236, 0.84); }
+    .section-kicker {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.55rem;
+    }
+    .section h2 {
+      font-size: clamp(1.85rem, 3.6vw, 2.55rem);
+      margin-bottom: 1.15rem;
+    }
+    .lede {
+      font-size: 1.12rem;
+      max-width: var(--text);
+      color: var(--ink);
+    }
+    .prose { max-width: var(--text); }
+    .prose p + p { margin-top: -0.15em; }
+
+    .split {
+      display: grid;
+      gap: 2rem;
+      align-items: start;
+    }
+    @media (min-width: 800px) {
+      .split {
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 3.25rem;
+      }
+      .split--reverse { grid-template-columns: 0.85fr 1.15fr; }
+      .split--reverse .prose { order: 2; }
+      .split--reverse .photo,
+      .split--reverse .photo-stack { order: 1; }
+    }
+    .story-continue {
+      margin-top: clamp(2.2rem, 4.5vw, 3.5rem);
+    }
+
+    /* ——— Results ——— */
+    .results {
+      list-style: none;
+      margin: 1.5rem 0 0;
+      padding: 0;
+      display: grid;
+      gap: 1.15rem;
+    }
+    .result {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--yellow);
+      padding: 1.2rem 1.25rem 1.25rem 1.35rem;
+    }
+    .result-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.4rem 1rem;
+      margin-bottom: 0.35rem;
+    }
+    .result h3 {
+      font-size: 1.22rem;
+      letter-spacing: -0.015em;
+    }
+    .place {
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: var(--yellow);
+      color: var(--navy);
+      padding: 0.22rem 0.55rem;
+      white-space: nowrap;
+    }
+    .place--silver {
+      background: transparent;
+      color: var(--navy);
+      border: 1px solid var(--line-strong);
+    }
+    .result-meta {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin: 0;
+    }
+    .result-places {
+      margin: 0.55rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .result-places li {
+      margin: 0.1em 0 0;
+      font-size: 1.05rem;
+    }
+
+    /* ——— Calendar ——— */
+    .calendar {
+      list-style: none;
+      margin: 1.5rem 0 0;
+      padding: 0;
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+    @media (min-width: 640px) {
+      .calendar { grid-template-columns: 1fr 1fr; }
+    }
+    @media (min-width: 960px) {
+      .calendar { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .calendar li {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      padding: 0.95rem 0.15rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .calendar-name {
+      font-family: var(--font-serif);
+      font-size: 1.15rem;
+      font-weight: 500;
+    }
+    .tag {
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-style: italic;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: none;
+      color: var(--muted);
+      white-space: nowrap;
+      margin-left: 0.35rem;
+    }
+
+    /* ——— Tools ——— */
+    .tools {
+      list-style: none;
+      margin: 1.6rem 0 0;
+      padding: 0;
+      display: grid;
+      gap: 0.9rem;
+    }
+    @media (min-width: 800px) {
+      .tools { grid-template-columns: 1fr 1fr; }
+    }
+    .tool {
+      display: block;
+      text-decoration: none;
+      background: var(--navy-2);
+      border: 1px solid rgba(230, 180, 35, 0.22);
+      padding: 1.25rem 1.3rem 1.3rem;
+      color: var(--paper);
+      height: 100%;
+      transition: border-color 0.15s ease;
+    }
+    .tool:hover { border-color: var(--yellow); }
+    .tool h3 {
+      font-size: 1.15rem;
+      margin-bottom: 0.45rem;
+      color: #fff;
+    }
+    .tool p {
+      font-size: 0.95rem;
+      color: rgba(246, 243, 236, 0.72);
+      margin: 0 0 0.85rem;
+    }
+    .tool-go {
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--yellow);
+    }
+
+    /* ——— Follow / video / contact ——— */
+    .follow-grid {
+      display: grid;
+      gap: 2rem;
+    }
+    @media (min-width: 800px) {
+      .follow-grid { grid-template-columns: 1fr 1.2fr; align-items: start; }
+    }
+    .ig-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.8rem 1.15rem;
+      background: var(--yellow);
+      color: var(--navy);
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      margin: 0.4rem 0 1.5rem;
+    }
+    .ig-btn:hover { background: var(--yellow-soft); }
+    .ig-btn svg { flex-shrink: 0; }
+    .video-wrap {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      background-color: var(--navy-2);
+      background-image: url("https://img.youtube.com/vi/jkTeBuJ3Cqg/hqdefault.jpg");
+      background-size: cover;
+      background-position: center;
+      border: 1px solid rgba(230, 180, 35, 0.22);
+    }
+    .video-wrap iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .contact-block {
+      margin-top: 2.5rem;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(246, 243, 236, 0.12);
+    }
+    .contact-link {
+      display: inline-block;
+      font-family: var(--font-serif);
+      font-size: clamp(1.2rem, 2.4vw, 1.55rem);
+      font-style: italic;
+      font-weight: 500;
+      color: var(--yellow-soft);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(230, 180, 35, 0.45);
+      padding-bottom: 0.15rem;
+    }
+    .contact-link:hover {
+      color: var(--yellow);
+      border-bottom-color: var(--yellow);
+    }
+
+    /* ——— Footer ——— */
+    .site-footer {
+      background: var(--navy);
+      color: rgba(246, 243, 236, 0.7);
+      padding: 1.75rem var(--pad) 2.25rem;
+      border-top: 4px solid var(--yellow);
+    }
+    .footer-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.75rem 1.5rem;
+      font-size: 0.92rem;
+    }
+    .footer-greet {
+      color: var(--yellow);
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 1.05rem;
+    }
+    .ascii-sail {
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-style: normal;
+      font-size: 0.85rem;
+      opacity: 0.75;
+      letter-spacing: 0.02em;
+    }
+
+    @media (max-width: 639px) {
+      .result { padding: 1.05rem 1rem 1.1rem 1.1rem; }
+      .slogan { max-width: none; }
+    }
+  </style>
 </head>
 <body>
-<style>
-  body { background:#0b1220; color:#e2e8f0; margin:0; }
-  h1 { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight:600; font-size:1.25rem; margin:16px 16px 8px; }
-  .nav { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin:0 16px 12px; font-size:0.95rem; }
-  .nav a { color:#38bdf8; text-decoration:none; }
-  .nav a:hover { text-decoration:underline; }
-  pre { margin:0; padding:0 12px 24px; overflow:auto; line-height:1.05; font-size:10px; color:#cbd5e1; }
-</style>
-<h1>Jó szelet! (\_ _/)</h1>
-    <p style="margin:24px 0;">
-  <a href="https://www.instagram.com/nbsailing/" target="_blank" rel="noopener noreferrer"
-   style="display:inline-flex;align-items:center;gap:10px;padding:12px 18px;border-radius:10px;background:linear-gradient(45deg,#f9ce34,#ee2a7b 55%,#6228d7);color:#fff;font-family:sans-serif;font-size:16px;font-weight:600;text-decoration:none;box-shadow:0 6px 16px rgba(238,42,123,.35);">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <rect x="3" y="3" width="18" height="18" rx="5" stroke="#fff" stroke-width="2"/>
-    <circle cx="12" cy="12" r="4" stroke="#fff" stroke-width="2"/>
-    <circle cx="17.5" cy="6.5" r="1" fill="#fff"/>
-  </svg>
-  NB Sailing az Instagramon
-</a>
-</p>
-<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;">
-  <iframe
-    src="https://www.youtube.com/embed/jkTeBuJ3Cqg"
-    title="NB Sailing"
-    style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-    referrerpolicy="strict-origin-when-cross-origin"
-    allowfullscreen>
-  </iframe>
-</div>
-<p class="nav"><a href="polar.html">Balaton Polar Router (átlagszél, mohó VMG) →</a></p>
-<p class="nav"><a href="polar-a1avg.html">Balaton Polar Router (átlagszél, A-gráf) →</a></p>
-<p class="nav"><a href="polar-a1.html">Balaton Polar Router (70% átlagszél 30% pöff, A-gráf) →</a></p>
-<p class="nav"><a href="https://balatonrouting.hu">Balaton forecast routing →</a></p>
-<pre>
+  <a class="skip" href="#tartalom"><span data-lang="hu">Ugrás a tartalomra</span><span data-lang="en">Skip to content</span></a>
 
-                                                                                  +*+                                                                                                                                       
-                                                                                 :=+**                                                                                                                                      
-                                                                                :..+*+                                                                                                                                      
-                                                                               :...-+**                                                                                                                                     
-                                                                              :.....++*                                                                                                                                     
-                                                                             :......-+*+                                                                                                                                    
-                                                                            :........++**                                                                                                                                   
-                                                                           :....... .:*+*                                                                                                                                   
-                                                                          :...........=*+*                                                                                                                                  
-                                                                         :.........  .:+*+                                                                                                                                  
-                                                                        :...........  .=**+                                                                                                                                 
-                                                                       :.......... ..  :+*+                                                                                                                                 
-                                                                      ::........... .  .=*+*                                                                                                                                
-                                                                     -:........... . .  :+*+*                                                                                                                               
-                                                                     :............. .    =*+*                                                                                                                               
-                                                                    :............. . .   :+*+*                                                                                                                              
-                                                                   :...............       =**+                                                                                                                              
-                                                                  ::............. . .     :+***                                                                                                                             
-                                                                 -:................ .      =++*                                                                                                                             
-                                                                 ::.............. .        :+*++                                                                                                                            
-                                                                ::............... . .       =+*+*                                                                                                                           
-                                                               :::................ .        :+***                                                                                                                           
-                                                              -::.:............. .           =++**                                                                                                                          
-                                                              ::::.:............. . .        :+*+*                       ##*******##**##**#***#**###                                                                        
-                                                             ::::::::::::.............        =*+**        **#*************#***#*#**#**#*#*****#******#****#**#                                                             
-                                                            -:::::::::.:.:.................. .:+*+* #******##*#*#                                          *##****#**                                                       
-                                                            :::.:............................ .=+*+**                                                              *#***#*                                                  
-                                                           :::::.:.............. .             .+*+*                                                                    *#***#                                              
-                                                           :::.:................ .              =+*+*                                                                       #****                                           
-                                                          :::::.:............... . .            .+*++                                                                           ****                                        
-                                                         -:::::................ .                -****                                                                             ***#                                     
-                                                         ::::.::.:.............. .               .++**                                                                               #***                                   
-                                                        -:::::.:.............. . .                -*++#                                                                                 #**                                 
-                                                        :::::::........:::......                  .+***@                                                                                  **#                               
-                                                       -:::::.:.:......%@%@%%%+..++==-:.           -+*+*@                                                                                   *#                              
-                                                       :::::::........:@%=::--:.-%@%%@%%-          .+*+* @                                                                                    **                            
-                                                      :::::::.:.:.....=%%*+=-.. +%#.  =%%:          =*+** @                                                                                    *#                           
-                                                      ::::::::........+@%**##: .*@*   -%@.          .+*++  @                                                                                     *                          
-                                                     :::::::.::.......*@+..... .%%+   =@%            =+**+  @                                                                                     **                        
-                                                     ::::::::..:......*%=..... :%@#+=#@%=            :*+*+   @                                                                                     #*                       
-                                                    -:::::::.:............... .:=+**#*-.              ++*+*   @=                                                                                    #*                      
-                                                    :::::::::................. .                      :*+**   +:-                                                                                    #*                     
-                                                   -::::::::::::::::::........                         +*+*   -::-                                                                                    ##                    
-                                                   :::::::::::::::::.::::::::::::::........ .          =*+*+  -:::-                                                                                    **                   
-                                                   ::::::::.:................ . . ...............::....:+*+* +:::::-                                                                                    #                   
-                                                  :::::::::::::::........... .                         .=*+*+-::::::-                                                                                    *                  
-                                                  :::::::::::::::::.:...........                        -+*+*-::::::::-                                                                                  *#                 
-                                                 -:::::::::::::::::::.:..........                       :=+*+-:::::::::=                                                                                  #*                
-                                                 ::::::::::.:...................                        ::+**=::::::::::=                                                                                  *                
-                                                 :::::::::::.:.............. .                          .:=+*=:::::::::::=                                                                                 **               
-                                                -:::::::::.:................ .                           :.+*+-:::::::::::=                                                                                 *               
-                                                ::::::::::.:................ . .                         :.=+*=:::::::::.::=                                                                                **              
-                                                :::::::::::.:............. .                             :.:+*+-::::::::::.:=                                                                                *              
-                                               -:::::::::.:...................                           .::=+*=:::::::::::::=                                                                               #*             
-                                               ::::::::::::.:..............                               -::+*=::::::::::::::=                                                                               *             
-                                               ::::::::::.:............... ..                             =::=**=:::::::.:....:=                                                                              *             
-                                              -:::::::::::.:............... . .                           --:-++=::::::.:......:=                                                                             **            
-                                              ::::::::::.:................ .                             .:=::+*+-::::::.:......:=                                                                             *            
-                                              :::::::::::::................ .                            ::=::-*+=::::.:.........:=                                                                            *            
-                                              :::::::::::::::::.......... .                              ::-:::+*+::::.:...........=                                                                           *#           
-                                             -:::::::::::::::::::::::::::::........ .                   .::--::-*+=::::.:...........=                                                                          #*           
-                                             ::::::::::::................................::.............::::-:::+++::.:..............=                                                                          *           
-                                             :::::::::::::.:............. .                       . ....::::=:::=*+=::.:..............=                                                                         *           
-                                             ::::::::::.:................. . .                         .::::-::::+*=::.................=                                                                        #           
-                                            =::::::::::::.:.............. .                            :::::--:::=+*-:..:............. .-                                                                       *#          
-                                            :::::::::::.:............... . .                           ::::::-:::-+*=:................ ..:@                                                                     #*          
-                                            ::::::::::::.:................                            .::::::=::::=*+-................   .:%                                                                     *          
-                                            ::::::::::::::::::::......... .                           :::::::-::::=+*=:............... .   :#                                                                    *          
-                                            ::::::::::::::::::.::......... .                          ::::::::-::::+++:............. . .    :*                                                                   #          
-                                           -:::::::::::::.:...............                           .::::::::#**+=***=.............. .      :*                                                                  *          
-                                           -::::::::::.:................. .                          :::::::::=::-=*%*+:........... . . .     .+                                                                 #          
-                                           :::::::::::::.:............. .                            :::::::::-:::::++*=.............          .+                                                                *          
-                                           :::::::::::.:................ . .                        .::::::::::-::::=*+=:::::::::..........     .=                                                               *          
-                                           :::::::::::.:................ .                          :::::::::::-::..:+*+:...................:.....=                                                              *          
-                                          -::::::::::::.:............. .  .                         :::::::::::-:::.:=**=........... .             =                                                             *          
-                                          -::::::::::.:..................                          .:::::::::::-:....-*++:........ .                =                                                            *          
-                                          :::::::::::::::............. . .                         :::::::::::::-:.:.:+*+-........ . .               -                                                           *          
-                                          ::::::::::::::::::::::::..........                       :::::::::::::-:....=+*=........ .                  :                                                          *          
-                                          ::::::::::::.:..................:.::::............      .:::::::::::::-:....:*++:...... . .                  :%                                                        *          
-                                          ::::::::::.:.................. .           . ...........::::::::::::::-::::.:+*+=....... .                    :#                                                       *          
-                                          :::::::::::.:.:............. .                          :::::::::::::::-:::::=**=:..... .                      :*                                                      *          
-                                          ::::::::::::................ .                         .:::::::::::::::-.....:+*+-.... . .                      .*                                                     *          
-                                          ::::::::::.:................ . .                       :::::::::::::.:.-:.....=*+=..... .                        .*                                                    #          
-                                         -:::::::::::.:............... .                         :::::::::::::.:.::.....-*++:.. .  .                        .+                                                   *          
-                                         =:::::::::::................ . .                       .::::::::::::::.::-.....:+**=... .                           .=                                                  *          
-                                         -:::::::::.::.:.............. .                        ::::::::::::::.:.:-......=*+=: . .                            .=                                                %*          
-                                         :::::::::::................ .                          ::::::::::::::::::-::::..:*+*:..                                =                                               #*          
-                                         ::::::::::::.:.............. . .                      .::::::::::::::.:.::::.::::++*=::.......                          =                                              *#          
-                                         ::::::::::.:................ .                        :::::::::::::.:....:-......=+*=:..........:.........               =                                             **          
-                                         :::::::::::::::::::.......... .                       ::::::::::::::......-......:+**-.              . .......:...........-                                            *#          
-                                         :::::::::::::::::.::..........                       .::::::::::::.:.:....-:......=+*=..                             ..... :%                                          *           
-                                         :::::::::::.:................ .                      ::::::::::::::.:.....::......-+*+:                                     :%                                         *           
-                                         :::::::::.:................. .                       ::::::::::::.:.......::.......+*+=                                      :#                                 *+*+****           
-                                         ::::::::::.:.............. .                        .::::::::::::::.:......-.......=**=:                                      :*                    *+**+*+*+*+**++*****           
-                                         ::::::::::::::............ . .                      :::::::::::::.:........-:......:+*+-                                       .*        *+*++**+**+*+*+**+**+*******              
-                                         ::::::::::::::::::::::::..........                  ::::::::::::::.........::..... .=**=.                                     ..:++*+*+*+*+**+*+*+*+*+**+****#***                  
-                                         ::::::::::...........................::............:::::::::::::.:.:.......::..... .-*++:                           ..:::--===+++*+*+**+**+*+**+*+**    ***#*#                     
-                                         ::::::::.::................ .                 . ...::::::::::::::::::::::...-..... ..+*+=                 ..:::-====+++*+*+*+*++===+*++*+*+        *#***##                         
-                                         :::::::::................ .                        :::::::::::::::::::::::::-::::::::=**=.       ..::-=====++***+**++=====--:::..  .=          **#*#*                              
-                                         ::::::::.:.:.............. .                      .:::::::::::::............::... . .:+**:.::-===+***+++=====---::::..               =   ***##**#                                  
-                                         ::::::::.:.............. . . .                    :::::::::::::.:...........::.... . .=+*=======--:::::...                            =**#**                                       
-                                         :::::::::.:................                      .::::::::::::::.:...........-.. . .  -*++:                                            -                                           
-                                         :::::::.:............... . .                     ::::::::::::::::::::::::::::-:::::::::+*+=                                             -                                          
-                                         :::::::::::::::::::.........:.:......::::::...:..:::::::::::::::::::::::::::::-:::::...=+*=.                                             :%                                        
-                                         :::::::::::::::.:............. .                .:::::::::::::.:..............:. . ....:*+*:.....:.......... .                            :#                                       
-                                         :::::::.:................ .                     .::::::::::::.:...............-..:::::-=+**=            ..........:...........             :*                                      
-                                         ::::::::.:.............. .                      ::::::::::::::.:.:::::::-=====++++++*++++**+.                            . ..........::.....:+                                     
-                                         ::::::.:................ . .                    ::::::::::--====++++++**+*+**+++=====-:::***=.                                               .*                                    
-                                         :::::::.:............... .              ..:::-=====++++++++*+**+*+*+*++++====--=::.     :=*+=::                                               .+                                   
-                                         :::::::................ ...:::::-====++++++*++*+***+*+*+**++=======---:::..... -.      .::*++: :.                                      .       .+                                  
-                                         ::::::.:.:.:::::::-====++++++*+*+*+**+**+*+***++=+======--::::::......:::..... ::      : .+*+=  .:.                                    .::      .=                                 
-                                         :::--====+++++*+**+**+*+*+***+*+**+*+*+*+***++=-::::::::::::.:..........:::.. .::     ..  =*+=.   .:                                     .::      =                                
-                                    ***+*+*+*+****+***+*+***+**+*+*++*+**+*****  @     -:::::::::::::..............:::. .:     :   :+**:    .:.                                     .::.    =                               
-                                    *+**+*+*+*+*+*+*+*+*+*+**+***                @    =::::::::::::.::.:.............::: :.   ..    =*+=      .:                                  :..  ::.   =                              
-                                    *****+********                               @    -:::::::::::::................. .::-:  .:     -*++.       :.                       ...       .:::..::.  -                             
-                                                                                 @    ::::::::::::.::................ .  :-. :.     .+*+:        .:.                     ..::::::...  ..:::::. :%                           
-                                                                                 @   =:::::::::::::.:.:.............. .  .:.::       =+*=          .:                           ...::::::::::::::%                          
-                                                                                 @   -:::::::::::::................. . .  :.:.:.     :*++:           :.                                 ...:::--==@@@@@@@@@@@@@@@@@         
-                                                                                 @   -:::::::::::.::.:...............     ::.  .:.   .=*+-   ..:::::::--::::------===========++++******##%%%%%@@%%%%%%%%%###*******@        
-                                                          @@@@@                  @  +:::::::::::::.:::::::::::::::::::::-:==-----=====++++*****+++++++++++++++++++++++****+++++======---:::::::::....            -@         
-               +========================++++++++***************%@@@@@@@@@@%%%@@@@@@@@%%%#%########%#####******************************+++====------:::::::::::::......                                          :%          
-              #+=====*%%%%%%%%%%%%%%%#######*#****************%#########*#*******++++========-----::::::::::::::::::........                                                                                   .#           
-             +... . .*----:::::::::::::::::::::............. .                                                                                                                                                 *            
-            =.       *                                                                                                                                                                                        +             
-           =         *                                                                                                                                                                                      .*              
-         @-          *.                                                                                                                                                                                    :#               
-@@@@@@@@%*+++++++++++%@@@%%%%%%%###*********++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*#@@@@@@@@@@@@@@@@@@
-        =           .=     @@@@@@@@@@@@@@@@%%%%%%%#****+=====---::::::::::......                                                                                                            ...::::-==**@@                  
-        =           .*                                @@@@@@@@@@@@@@@@@@@%%%%%%%#%###******++++=========-======-=---------:::::::::::::::::::::::::::::::::::::::::::::::::::---========++******%@@@@                       
-        =           :@                                                                    @@@@@@@@@@@@@@@#-:::------------+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                                     
-        =           =                                                                                    -               .*                                                                                                 
-        -          .#                                                                                   @:               =                                                                                                  
-        -          -                                                                                    +.              :*                                                                                                  
-        -          =                                                                                    =               =                                                                                                   
-        -         :%                                                                                   @:              :%                                                                                                   
-        -         =                                                                                    *.             .=                                                                                                    
-        :        .*                                                                                    =              :                                                                                                     
-        :        :@                                                                                    :             .+                                                                                                     
-        :        =                                                                                    #.             -                                                                                                      
-        :       .#                                                                                    =             :*                                                                                                      
-        =::::::.=                                                                                     -             =                                                                                                       
-         @@@@@@@                                                                                     %:            :%                                                                                                       
-                                                                                                     +.           .=                                                                                                        
-                                                                                                     =:           :@                                                                                                        
-                                                                                                      *+::::::::::=                                                                                                         
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#eleje">
+        <svg class="brand-mark" viewBox="0 0 24 16" aria-hidden="true">
+          <polygon points="0,0 24,8 0,16" fill="#e6b423"/>
+          <polygon points="0,4 12,8 0,12" fill="#0b1a28"/>
+        </svg>
+        <span class="brand-name">NB Sailing</span>
+        <span class="greeting">Jó szelet!</span>
+      </a>
+      <nav class="lang-switch" aria-label="Nyelv / Language">
+        <a href="?lang=hu" hreflang="hu" lang="hu" data-set-lang="hu">HU</a>
+        <span class="lang-sep" aria-hidden="true">/</span>
+        <a href="?lang=en" hreflang="en" lang="en" data-set-lang="en">EN</a>
+      </nav>
+      <nav class="site-nav" data-aria-hu="Oldal szakaszai" data-aria-en="Page sections" aria-label="Oldal szakaszai">
+        <a href="#tortenet"><span data-lang="hu">Történet</span><span data-lang="en">Story</span></a>
+        <a href="#eredmenyek"><span data-lang="hu">Eredmények</span><span data-lang="en">Results</span></a>
+        <a href="#csalad"><span data-lang="hu">Család</span><span data-lang="en">Family</span></a>
+        <a href="#naptar"><span data-lang="hu">Naptár</span><span data-lang="en">Calendar</span></a>
+        <a href="#eszkozok"><span data-lang="hu">Eszközök</span><span data-lang="en">Tools</span></a>
+        <a href="#kapcsolat"><span data-lang="hu">Kapcsolat</span><span data-lang="en">Contact</span></a>
+      </nav>
+    </div>
+  </header>
 
- </pre>
+  <main id="tartalom">
+    <section class="hero" id="eleje">
+      <div class="hero-inner">
+        <div>
+          <p class="eyebrow">NB Sailing · Budapest</p>
+          <h1><span data-lang="hu">Nagy Benedek</span><span data-lang="en">Benedek Nagy</span></h1>
+          <p class="slogan">
+            <span data-lang="hu">Ötgyerekes apuka, aki a Balatonon versenyez.</span>
+            <span data-lang="en">Father of five, racing on Lake Balaton.</span>
+          </p>
+          <p class="hero-lead" data-lang="hu">A vitorlázás gyerekkorom óta velem van. Komolyan versenyzem, de a család az első, és ez így van jól.</p>
+          <p class="hero-lead" data-lang="en">Sailing has been with me since childhood. I race seriously, but my family comes first.</p>
+        </div>
+        <figure class="photo photo--hero">
+          <img
+            src="img/hero.jpg"
+            width="1200"
+            height="1600"
+            alt="Egyedül a Stalkerrel a Balatonon, szürkületben, a 2026-os BYC Egyszemélyes Balatonkerülőn."
+            data-alt-hu="Egyedül a Stalkerrel a Balatonon, szürkületben, a 2026-os BYC Egyszemélyes Balatonkerülőn."
+            data-alt-en="Alone on Stalker mid-lake at dusk, during the 2026 BYC Single-handed Round Lake Balaton."
+            fetchpriority="high"
+            decoding="async">
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="tortenet">
+      <div class="wrap split">
+        <div class="prose">
+          <p class="section-kicker"><span data-lang="hu">Történet</span><span data-lang="en">Story</span></p>
+          <h2><span data-lang="hu">A vízen nőttem fel</span><span data-lang="en">I grew up on the water</span></h2>
+          <p data-lang="hu">Mióta az eszemet tudom, édesapámnak volt hajója. A nyaraimat kisgyerekként egy Rebell Seaskip MKII-n töltöttem.</p>
+          <p data-lang="en">For as long as I can remember, my father had a boat. I spent my childhood summers on a Rebell Seaskip MKII.</p>
+          <p data-lang="hu">Tizennégy éves voltam, amikor megérkezett az <em>Aiolos</em>, édesapám Elan 295-öse. Azóta versenyzem vele a Balatonon, Yardstick II-ben, majd ORC-ben: húsz éve, évente öt-hat verseny — Évadnyitó, Mihálkovics Kupa, Kékszalag, Félsziget-kerülő, Köd Kupa, Csillagtúra. Mindegyik versenyen álltunk már a dobogó szinte minden fokán.</p>
+          <p data-lang="en">I was fourteen when <em>Aiolos</em> arrived, my father’s Elan 295. I’ve been racing her on Lake Balaton ever since, in Yardstick II and then in ORC: twenty years, five or six races a season — the Évadnyitó, the Mihálkovics Cup, the Kékszalag (Blue Ribbon, the classic race around the lake), the Félsziget-kerülő, Köd Kupa and Csillagtúra. We’ve stood on almost every step of the podium at every one of them.</p>
+          <p data-lang="hu">Az <em>Aiolos</em> csapatával nyertünk már Kékszalagot YS II-ben, ORC-ben pedig másodikok és harmadikok is lettünk. A YS II országos bajnokságon másodikok voltunk. A hajót édesapámmal évek alatt ismertük ki, és ez minden eredményben benne van.</p>
+          <p data-lang="en">With the <em>Aiolos</em> crew we have won the Kékszalag in YS II, and finished both second and third in ORC. We were also second at the YS II national championship. My father and I spent years learning that boat, and it shows in every result.</p>
+        </div>
+        <div class="photo-stack">
+          <figure class="photo">
+            <img
+              src="img/aiolos.jpg"
+              width="1200"
+              height="1600"
+              alt="Az Aiolos, édesapám Elan 295-öse, spinnakerrel a Balatonon, 2026 júniusában."
+              data-alt-hu="Az Aiolos, édesapám Elan 295-öse, spinnakerrel a Balatonon, 2026 júniusában."
+              data-alt-en="Aiolos, my father’s Elan 295, flying a spinnaker on Lake Balaton, June 2026."
+              loading="lazy"
+              decoding="async">
+          </figure>
+          <figure class="photo photo--heritage">
+            <img
+              src="img/aiolos-2005.jpg"
+              width="1600"
+              height="1200"
+              alt="2005, az Aiolos kormányánál, elöl édesapám."
+              data-alt-hu="2005, az Aiolos kormányánál, elöl édesapám."
+              data-alt-en="2005: me at the helm of Aiolos, my father up front."
+              loading="lazy"
+              decoding="async">
+            <figcaption>
+              <span data-lang="hu">2005, az Aiolos kormányánál, elöl édesapám</span>
+              <span data-lang="en">2005: me at the helm of Aiolos, my father up front</span>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="wrap split story-continue">
+        <div class="prose">
+          <p data-lang="hu">Néhány éve beszálltam a <a href="https://stalkersailingteam.hu/" target="_blank" rel="noopener"><em>Stalker</em> csapatába</a>, Hodász Gábor Nautic 311-esére.</p>
+          <p data-lang="en">A few years ago I joined the <a href="https://stalkersailingteam.hu/" target="_blank" rel="noopener"><em>Stalker</em> team</a>, Gábor Hodász’s Nautic 311.</p>
+          <p data-lang="hu">2026 tavaszán egy hetet az Adrián hajóztunk Méder Áronnal egy Beneteau Oceanis 391-esen: Milnából (Brač) áthajóztunk Bariba, onnan északnak az olasz part mentén, majd Viestéből vissza Milnába. A következő lépés a szóló és a nyílt vízi vitorlázás.</p>
+          <p data-lang="en">In spring 2026 I spent a week on the Adriatic aboard a Beneteau Oceanis 391, sailing with Áron Méder among others: from Milna, on Brač in Croatia, across to Bari, then north along the Italian coast, and from Vieste back across to Milna. Next up: solo and offshore sailing.</p>
+        </div>
+        <figure class="photo">
+          <img
+            src="img/adriatic.jpg"
+            width="1600"
+            height="1200"
+            alt="Hajnal a középső Adrián, 2026 május."
+            data-alt-hu="Hajnal a középső Adrián, 2026 május."
+            data-alt-en="Dawn on the central Adriatic, May 2026."
+            loading="lazy"
+            decoding="async">
+          <figcaption>
+            <span data-lang="hu">Hajnal a középső Adrián, 2026 május</span>
+            <span data-lang="en">Dawn on the central Adriatic, May 2026</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section section--alt" id="eredmenyek">
+      <div class="wrap">
+        <p class="section-kicker"><span data-lang="hu">Eredmények</span><span data-lang="en">Results</span></p>
+        <h2><span data-lang="hu">Válogatott eredmények</span><span data-lang="en">Selected results</span></h2>
+        <p class="lede" data-lang="hu">Válogatás az elmúlt évekből.</p>
+        <p class="lede" data-lang="en">A selection from recent years.</p>
+
+        <ol class="results">
+          <li class="result">
+            <div class="result-top">
+              <h3><span data-lang="hu">BYC Egyszemélyes Balatonkerülő, 2026</span><span data-lang="en">BYC Single-handed Round Lake Balaton, 2026</span></h3>
+              <span class="place"><span data-lang="hu">1. hely · 11 m Open</span><span data-lang="en">1st · 11 m Open</span></span>
+            </div>
+            <p class="result-meta"><em>Stalker</em> · 6:52:08</p>
+            <ul class="result-places">
+              <li><span data-lang="hu">1. hely, 11 m Open kategória</span><span data-lang="en">1st in the 11 m Open class</span></li>
+              <li><span data-lang="hu">5. hely abszolútban a 14 hajós mezőnyből</span><span data-lang="en">5th overall in a fleet of 14</span></li>
+            </ul>
+          </li>
+          <li class="result">
+            <div class="result-top">
+              <h3><span data-lang="hu">53. Kékszalag</span><span data-lang="en">53rd Kékszalag</span></h3>
+              <span class="place place--silver"><span data-lang="hu">ORC 2. hely</span><span data-lang="en">ORC 2nd</span></span>
+            </div>
+            <p class="result-meta"><em>Aiolos</em></p>
+          </li>
+          <li class="result">
+            <div class="result-top">
+              <h3><span data-lang="hu">Kékszalag Port évadzáró, 2024</span><span data-lang="en">Kékszalag Port season closer, 2024</span></h3>
+              <span class="place place--silver"><span data-lang="hu">2. hely</span><span data-lang="en">2nd</span></span>
+            </div>
+            <p class="result-meta"><em>Stalker</em></p>
+          </li>
+          <li class="result">
+            <div class="result-top">
+              <h3>Svert Kupa, Flying Dutchman</h3>
+              <span class="place"><span data-lang="hu">1. hely, 2021</span><span data-lang="en">1st, 2021</span></span>
+            </div>
+            <p class="result-meta"><span data-lang="hu">5–7 méteres kategória</span><span data-lang="en">5–7 m class</span></p>
+            <ul class="result-places">
+              <li data-lang="hu">2019: 3. hely · 2020: 2. hely · 2021: 1. hely</li>
+              <li data-lang="en">2019: 3rd · 2020: 2nd · 2021: 1st</li>
+            </ul>
+          </li>
+        </ol>
+
+        <figure class="photo photo--full">
+          <img
+            src="img/stalker-solo.jpg"
+            width="1600"
+            height="1200"
+            alt="A Stalker kormányánál nappal, a 2026-os BYC Egyszemélyes Balatonkerülőn."
+            data-alt-hu="A Stalker kormányánál nappal, a 2026-os BYC Egyszemélyes Balatonkerülőn."
+            data-alt-en="At the helm of Stalker by day, during the 2026 BYC Single-handed Round Lake Balaton."
+            loading="lazy"
+            decoding="async">
+          <figcaption>
+            <span data-lang="hu">A Stalker szólóban, 2026-os BYC Egyszemélyes Balatonkerülő</span>
+            <span data-lang="en">Stalker, sailed solo, 2026 BYC Single-handed Round Lake Balaton</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="csalad">
+      <div class="wrap split split--reverse">
+        <div class="prose">
+          <p class="section-kicker"><span data-lang="hu">Család és a következő generáció</span><span data-lang="en">Family and the next generation</span></p>
+          <h2><span data-lang="hu">Ami a versenyzésnél is fontosabb</span><span data-lang="en">What matters more than racing</span></h2>
+          <p data-lang="hu">Házas vagyok, öt gyerek apja. A feleségem nélkül egyetlen verseny sem jönne össze: ő tartja egyben az otthont, gyakran akkor is, amikor a család két vitorlázója egyszerre van távol.</p>
+          <p data-lang="en">I’m married with five kids. None of this happens without my wife: she holds everything together at home, often while both sailors in the family are away at once.</p>
+          <p data-lang="hu">2021-ben, a Svert Kupa győzelmekor a lányom is a hajón volt — akkor négyéves volt. Az olimpiai bronzérmes Érdi Mária akasztotta a nyakunkba az aranyérmet. Azóta Érdi Mária a példaképe. 2026-ban megvolt az első Optimist-szezonja.</p>
+          <p data-lang="en">In 2021, when we won the Svert Cup, my daughter was on board — she was four. Olympic bronze medallist Mária Érdi hung the gold medals around our necks, and she’s been my daughter’s role model ever since. In 2026 she finished her first season racing Optimist.</p>
+        </div>
+        <figure class="photo">
+          <img
+            src="img/optimist.jpg"
+            width="1600"
+            height="1200"
+            alt="A lányom Optimistje, HUN 515, az első versenyszezonjában, 2026-ban."
+            data-alt-hu="A lányom Optimistje, HUN 515, az első versenyszezonjában, 2026-ban."
+            data-alt-en="My daughter’s Optimist, HUN 515, in her first racing season, 2026."
+            loading="lazy"
+            decoding="async">
+          <figcaption>
+            <span data-lang="hu">Az első Optimist-szezon, 2026</span>
+            <span data-lang="en">Her first Optimist season, 2026</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section section--alt" id="naptar">
+      <div class="wrap">
+        <p class="section-kicker"><span data-lang="hu">Versenynaptár 2027</span><span data-lang="en">2027 race calendar</span></p>
+        <h2><span data-lang="hu">A 2027-es terv</span><span data-lang="en">The 2027 season</span></h2>
+        <p class="lede" data-lang="hu">Tervezett versenyek. A dátumokat akkor írom ki, ha már hivatalosak.</p>
+        <p class="lede" data-lang="en">Planned starts. I’ll add dates once they’re official.</p>
+        <ul class="calendar">
+          <li>
+            <span class="calendar-name" data-lang="hu">Évadnyitó</span>
+            <span class="calendar-name" data-lang="en">Season opener</span>
+          </li>
+          <li>
+            <span class="calendar-name" data-lang="hu">Mihálkovics Kupa</span>
+            <span class="calendar-name" data-lang="en">Mihálkovics Cup</span>
+          </li>
+          <li>
+            <span class="calendar-name">Kékszalag</span>
+          </li>
+          <li>
+            <span class="calendar-name">Félsziget-kerülő</span>
+          </li>
+          <li>
+            <span class="calendar-name">Köd Kupa</span>
+          </li>
+          <li>
+            <span class="calendar-name">Csillagtúra</span>
+          </li>
+          <li>
+            <span class="calendar-name" data-lang="hu">BYC Szóló</span>
+            <span class="calendar-name" data-lang="en">BYC Solo</span>
+          </li>
+          <li>
+            <span class="calendar-name" data-lang="hu">Klasszikus Szóló <span class="tag">(Aiolos)</span></span>
+            <span class="calendar-name" data-lang="en">Classic Solo <span class="tag">(Aiolos)</span></span>
+          </li>
+          <li>
+            <span class="calendar-name" data-lang="hu">Négykezes</span>
+            <span class="calendar-name" data-lang="en">Double-handed</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section section--navy" id="eszkozok">
+      <div class="wrap">
+        <p class="section-kicker"><span data-lang="hu">Eszközök</span><span data-lang="en">Tools</span></p>
+        <h2><span data-lang="hu">Balatoni útvonaltervezés</span><span data-lang="en">Routing on Lake Balaton</span></h2>
+        <p class="lede" data-lang="hu">A Balatonra készítettem néhány útvonaltervezőt: polarok, különböző routing-elvek, és egy előrejelzéses izokrón router. Szabadon használhatók, próbáld ki.</p>
+        <p class="lede" data-lang="en">I build routing tools for Lake Balaton: polars, different routing approaches, and a forecast-based isochrone router. Free to use. Give them a try.</p>
+        <ul class="tools">
+          <li>
+            <a class="tool" href="polar.html">
+              <h3>Balaton Polar Router</h3>
+              <p data-lang="hu">Átlagszél, mohó VMG.</p>
+              <p data-lang="en">Average wind, greedy VMG.</p>
+              <span class="tool-go"><span data-lang="hu">Megnyitás →</span><span data-lang="en">Open →</span></span>
+            </a>
+          </li>
+          <li>
+            <a class="tool" href="polar-a1avg.html">
+              <h3>Balaton Polar Router</h3>
+              <p data-lang="hu">Átlagszél, A-gráf.</p>
+              <p data-lang="en">Average wind, A-graph.</p>
+              <span class="tool-go"><span data-lang="hu">Megnyitás →</span><span data-lang="en">Open →</span></span>
+            </a>
+          </li>
+          <li>
+            <a class="tool" href="polar-a1.html">
+              <h3>Balaton Polar Router</h3>
+              <p data-lang="hu">70% átlagszél, 30% pöff, A-gráf.</p>
+              <p data-lang="en">70% average wind, 30% gust, A-graph.</p>
+              <span class="tool-go"><span data-lang="hu">Megnyitás →</span><span data-lang="en">Open →</span></span>
+            </a>
+          </li>
+          <li>
+            <a class="tool" href="https://balatonrouting.hu" rel="noopener noreferrer">
+              <h3>Balaton forecast routing</h3>
+              <p data-lang="hu">Előrejelzésre épülő izokrón útvonaltervező.</p>
+              <p data-lang="en">A forecast-based isochrone router.</p>
+              <span class="tool-go">balatonrouting.hu →</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section section--navy" id="kapcsolat" style="padding-top: 0; border-top: 1px solid rgba(230, 180, 35, 0.18);">
+      <div class="wrap">
+        <p class="section-kicker"><span data-lang="hu">Instagram, videó, kapcsolat</span><span data-lang="en">Instagram, video, contact</span></p>
+        <h2><span data-lang="hu">Ha követnéd, merre járok</span><span data-lang="en">Follow along</span></h2>
+        <div class="follow-grid">
+          <div>
+            <p data-lang="hu">Az NB Sailing Instagram-fiókon a versenyek és a tó körüli hétköznapok vannak.</p>
+            <p data-lang="en">Races and everyday life on the lake, on the NB Sailing Instagram.</p>
+            <a class="ig-btn" href="https://www.instagram.com/nbsailing/" target="_blank" rel="noopener noreferrer">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="5" stroke="#0b1a28" stroke-width="2"/>
+                <circle cx="12" cy="12" r="4" stroke="#0b1a28" stroke-width="2"/>
+                <circle cx="17.5" cy="6.5" r="1.15" fill="#0b1a28"/>
+              </svg>
+              <span data-lang="hu">NB Sailing az Instagramon</span>
+              <span data-lang="en">NB Sailing on Instagram</span>
+            </a>
+            <div class="contact-block">
+              <a class="contact-link" href="mailto:info@nbsailing.hu">
+                <span data-lang="hu">Írj, ha támogatnád az utamat, vagy csak beszélgetnél a vitorlázásról.</span>
+                <span data-lang="en">Want to support the journey? Get in touch.</span>
+              </a>
+            </div>
+          </div>
+          <div class="video-wrap">
+            <iframe
+              src="https://www.youtube.com/embed/jkTeBuJ3Cqg"
+              title="NB Sailing"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen>
+            </iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p><span class="footer-greet">Jó szelet!</span> <span class="ascii-sail">(\_ _/)</span></p>
+      <p data-lang="hu">NAGY Benedek · Budapest · NB Sailing</p>
+      <p data-lang="en">Benedek Nagy · Budapest · NB Sailing</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var KEY = "nbsailing-lang";
+      var DESC = {
+        hu: "Nagy Benedek, NB Sailing. Ötgyerekes apuka, aki a Balatonon versenyez. Budapest.",
+        en: "Benedek Nagy, NB Sailing. A father of five who races on Lake Balaton. Budapest."
+      };
+      var TITLE = {
+        hu: "NB Sailing · Nagy Benedek",
+        en: "NB Sailing · Benedek Nagy"
+      };
+
+      function current() {
+        return document.documentElement.lang === "en" ? "en" : "hu";
+      }
+
+      function apply(lang, persist) {
+        lang = lang === "en" ? "en" : "hu";
+        document.documentElement.lang = lang;
+        document.title = TITLE[lang];
+        var desc = document.getElementById("meta-desc");
+        if (desc) desc.setAttribute("content", DESC[lang]);
+        document.querySelectorAll("[data-aria-hu]").forEach(function (el) {
+          var label = lang === "en" ? el.getAttribute("data-aria-en") : el.getAttribute("data-aria-hu");
+          if (label) el.setAttribute("aria-label", label);
+        });
+        document.querySelectorAll("img[data-alt-hu]").forEach(function (el) {
+          var alt = lang === "en" ? el.getAttribute("data-alt-en") : el.getAttribute("data-alt-hu");
+          if (alt) el.setAttribute("alt", alt);
+        });
+        document.querySelectorAll("[data-set-lang]").forEach(function (el) {
+          var on = el.getAttribute("data-set-lang") === lang;
+          if (on) el.setAttribute("aria-current", "true");
+          else el.removeAttribute("aria-current");
+        });
+        if (persist) {
+          try { localStorage.setItem(KEY, lang); } catch (e) {}
+          try {
+            var url = new URL(location.href);
+            if (lang === "en") url.searchParams.set("lang", "en");
+            else url.searchParams.delete("lang");
+            history.replaceState(null, "", url);
+          } catch (e) {}
+        }
+      }
+
+      apply(current(), false);
+
+      document.querySelectorAll("[data-set-lang]").forEach(function (el) {
+        el.addEventListener("click", function (e) {
+          e.preventDefault();
+          apply(el.getAttribute("data-set-lang"), true);
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
