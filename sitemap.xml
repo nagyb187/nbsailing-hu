@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://nbsailing.hu/</loc>
+    <lastmod>2026-11-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="hu" href="https://nbsailing.hu/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nbsailing.hu/?lang=en"/>
+  </url>
+  <url>
+    <loc>https://nbsailing.hu/?lang=en</loc>
+    <lastmod>2026-11-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="hu" href="https://nbsailing.hu/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nbsailing.hu/?lang=en"/>
+  </url>
+  <url>
+    <loc>https://nbsailing.hu/polar.html</loc>
+    <lastmod>2026-11-19</lastmod>
+  </url>
+  <url>
+    <loc>https://nbsailing.hu/polar-a1.html</loc>
+    <lastmod>2026-11-19</lastmod>
+  </url>
+  <url>
+    <loc>https://nbsailing.hu/polar-a1avg.html</loc>
+    <lastmod>2026-11-19</lastmod>
+  </url>
+  <url>
+    <loc>https://nbsailing.hu/polar-isochrone.html</loc>
+    <lastmod>2026-11-19</lastmod>
+  </url>
+  <url>
+    <loc>https://nbsailing.hu/polar-isochrone-21r.html</loc>
+    <lastmod>2026-11-19</lastmod>
+  </url>
+  <url>
+    <loc>https://nbsailing.hu/polar-isochrone-21s.html</loc>
+    <lastmod>2026-11-19</lastmod>
+  </url>
+</urlset>
